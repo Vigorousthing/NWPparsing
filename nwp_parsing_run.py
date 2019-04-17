@@ -64,3 +64,5 @@ if __name__ == "__main__":
     # analyzer.plot_nearest_point(analyzer.around_four_grid_point(point[0], point[1]), point[0], point[1])
     # analyzer.plot_nearest_n_point(analyzer.nearest_n_grid_point(10, point[0], point[1]), point[0], point[1])
 
+
+"do you think this will be changed?"
