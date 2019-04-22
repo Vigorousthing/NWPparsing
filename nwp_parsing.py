@@ -56,19 +56,18 @@ class FtpAccess:
 
         number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
 
-        loop = 0
-        while 1:
-            loop += 1
-            current_time = start_time + datetime.timedelta(days=1 * (loop-1))
-            if current_time > end_time + datetime.timedelta(days=1):
-                break
+        if start_time.hour % 6 != 0:
+            start_time = start_time + datetime.timedelta(hours=(6 - (start_time.hour % 6)))
+        if end_time.hour % 6 != 0:
+            end_time = end_time - datetime.timedelta(hours=end_time.hour % 6)
 
-            re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(current_time))[:-6]
-            for point in self.time_point:
-                for i in range(number_of_horizon):
-                    filename = dir_dic[self.data_type]+"_v070_erlo_" + self.fold_type + "_h" + str(self.horizon_interval[0]+i).zfill(3) + "." + \
-                               re_converted_date_string + point + ".gb2"
-                    self.file_name_list.append(filename)
+        # time interval between given time points(subset of [00, 06, 12, 18])
+        time_interval = []
+        for i, val in enumerate(self.time_point):
+            if i + 1 == len(self.time_point):
+                time_interval.append(self.time_point[((i + 1) % len(self.time_point))] + 24 - val)
+            else:
+                time_interval.append(self.time_point[i+1] - val)
 
 
 
