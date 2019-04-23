@@ -22,6 +22,8 @@ class FtpAccess:
 
         self.file_name_list = []
 
+        self.nearest_file_list = []
+
         self.local_path = "/home/jhpark/NWP"
 
     def data_type_setting(self, data_type, fold_type, time_interval, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
@@ -31,7 +33,7 @@ class FtpAccess:
         self.horizon_interval = horizon_interval
         self.time_point = time_point
 
-        current_dir = "/"+data_type
+        current_dir = "/" + data_type
         self.ftp.cwd(current_dir)
 
     def local_path_setting(self, local_path="/home/jhpark/NWP"):
@@ -56,20 +58,39 @@ class FtpAccess:
 
         number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
 
+        # start / end time alignment for prediction time
         if start_time.hour % 6 != 0:
             start_time = start_time + datetime.timedelta(hours=(6 - (start_time.hour % 6)))
         if end_time.hour % 6 != 0:
             end_time = end_time - datetime.timedelta(hours=end_time.hour % 6)
 
-        # time interval between given time points(subset of [00, 06, 12, 18])
+        # time interval between at each given time points(subset of [00, 06, 12, 18])
         time_interval = []
         for i, val in enumerate(self.time_point):
             if i + 1 == len(self.time_point):
-                time_interval.append(self.time_point[((i + 1) % len(self.time_point))] + 24 - val)
+                time_interval.append(int(self.time_point[((i + 1) % len(self.time_point))]) + 24 - int(val))
+                break
             else:
-                time_interval.append(self.time_point[i+1] - val)
+                time_interval.append(int(self.time_point[i+1]) - int(val))
 
+        current_index_for_time_interval = self.time_point.index(str(start_time.hour).zfill(2))
 
+        current_time = start_time
+
+        time_interval_length = len(time_interval)
+        while 1:
+            re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(current_time))[:-6]
+            for i in range(number_of_horizon):
+                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(self.horizon_interval[0] + i).zfill(3) + "." + \
+                           re_converted_date_string + str(current_time.hour).zfill(2) + ".gb2"
+                self.file_name_list.append(filename)
+
+            current_time = current_time + datetime.timedelta(hours=time_interval[current_index_for_time_interval % time_interval_length])
+
+            if current_time > end_time:
+                break
+
+            current_index_for_time_interval += 1
 
     def check_total_size_of_files(self):
         file_size = 0
@@ -171,44 +192,53 @@ class FtpAccess:
             else:
                 print "cannot remove " + filename + " because the file does not exists in local pc"
 
-    def find_nearest_nwp_prediction_file_in_local(self, current_time):
-        """this function intends to find latest nwp prediction file each time horizon from current time"""
+    def find_nearest_nwp_prediction_file_in_local(self, current_time, horizon_num):
+        """
+        this function intends to find latest nwp prediction file towards each time horizon from current time
+        if local file system does not have a such file, then missing value should be interpolated
+        """
+        # number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
+
         # data type and filename part pair
         dir_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
 
         # length of time horizon
-        number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
+        horizon_num = horizon_num + 1
 
         # from korean time to UTC time(NWP notation)
         current_time = current_time - datetime.timedelta(hours=9)
 
-        # distance from latest prediction time
-        dif = current_time.hour % 6
-
         file_name_list = []
-        for i in range(number_of_horizon):
+        for i in range(horizon_num):
             "loop for every time horizon"
+            # distance from latest prediction time
+            dif = current_time.hour % 6
+
             while 1:
                 "find nearest file"
-                nearest_time = current_time - datetime.timedelta(hours=dif)
 
-                re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(nearest_time))[:-6]
+                nearest_prediction_time = current_time - datetime.timedelta(hours=dif)
+                re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(nearest_prediction_time))[:8]
 
-                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(
-                    self.horizon_interval[0] + i).zfill(3) + "." + \
-                           re_converted_date_string + str(nearest_time.hour).zfill(2) + ".gb2"
+                hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds/3600
+
+                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(hour_dif_from_prediction_time + i).zfill(3) + "." + \
+                           re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
 
                 path = os.path.join(self.local_path, filename)
 
-                # change needed to check ftp directory
-                if os.path.exists(path) and (str(nearest_time.hour).zfill(2) in self.time_point):
+                if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) in self.time_point):
                     file_name_list.append(filename)
-                    return file_name_list
-                elif abs((current_time - nearest_time).days) >= 2:
+                    break
+                elif abs((current_time - nearest_prediction_time).days) >= 2:
+                    file_name_list.append(None)
                     print "no matched file in recent 2 days"
                     break
                 else:
                     dif += 6
+
+        self.nearest_file_list = file_name_list
+        return file_name_list
 
     def close(self):
         self.ftp.quit()

@@ -38,8 +38,8 @@ current_time = datetime.datetime.now()
 #
 # nwp_parsing_controller.remove_files(ftp_accessor, data_type, fold_type, time_interval, horizon_interval=horizon_interval)
 ftp_accessor.data_type_setting(data_type, fold_type, time_interval, horizon_interval)
-print current_time-datetime.timedelta(days=11)
-print ftp_accessor.find_nearest_nwp_prediction_file_in_local(current_time-datetime.timedelta(days=11))
+# print current_time-datetime.timedelta(days=11)
+print ftp_accessor.find_nearest_nwp_prediction_file_in_local(current_time-datetime.timedelta(days=11), 10)
 
 
 ##################################################################################################
