@@ -7,9 +7,10 @@ from math import *
 import pandas as pd
 from haversine import *
 import matplotlib.pyplot as plt
+import keras
 
 
-class FtpAccess:
+class NwpFileHandler:
     def __init__(self, ip, id, pw):
         self.ftp = ftplib.FTP()
         self.ftp.connect(ip)
@@ -24,8 +25,11 @@ class FtpAccess:
 
         self.nearest_file_list = []
 
+        self.prediction_model = None
+
         self.local_path = "/home/jhpark/NWP"
 
+    # should be called before use other functions
     def data_type_setting(self, data_type, fold_type, time_interval, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
         self.data_type = data_type
         self.fold_type = fold_type
@@ -35,9 +39,6 @@ class FtpAccess:
 
         current_dir = "/" + data_type
         self.ftp.cwd(current_dir)
-
-    def local_path_setting(self, local_path="/home/jhpark/NWP"):
-        self.local_path = local_path
 
     def set_file_names(self):
         dir_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
@@ -92,17 +93,7 @@ class FtpAccess:
 
             current_index_for_time_interval += 1
 
-    def check_total_size_of_files(self):
-        file_size = 0
-        file_num = 0
-        for file_name in self.file_name_list:
-            try:
-                file_size += self.ftp.size(file_name)
-                file_num += 1
-            except ftplib.error_perm:
-                print file_name + " not exists in ftp server"
-        print "total size of files : ", float(file_size)/(1024*1024*1024), "gb", ", total number of files :", file_num
-
+    # functions handle file save/remove
     def save_file_from_ftp_server(self):
         for filename in self.file_name_list:
             try:
@@ -117,7 +108,16 @@ class FtpAccess:
                 os.remove(path)
                 print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
 
-    def extract_variable_values_from_saved_files(self, nwp_var_list, nearest_type, given_point, output_file_name="new"):
+    def remove_from_local_pc(self):
+        for filename in self.file_name_list:
+            path = os.path.join(self.local_path, filename)
+            if os.path.exists(path):
+                os.remove(path)
+            else:
+                print "cannot remove " + filename + " because the file does not exists in local pc"
+
+    # functions handle main jobs
+    def extract_variable_values(self, purpose, nwp_var_list, nearest_type, given_point, output_file_name="new"):
         # set analyzer
         nwp_grid_analyzer = NwpGridAnalyze()
 
@@ -138,8 +138,14 @@ class FtpAccess:
         # set dataframe
         df = pd.DataFrame(columns=col)
 
+        # align filename with purpose
+        if purpose == "training":
+            file_name_list = self.file_name_list
+        elif purpose == "prediction":
+            file_name_list = self.nearest_file_list
+
         # add rows to dataframe
-        for filename in self.file_name_list:
+        for filename in file_name_list:
             path = os.path.join(self.local_path, filename)
             horizon = int(filename.split("h")[1].split(".")[0])
             # utc correction included in crtn_tm
@@ -183,14 +189,7 @@ class FtpAccess:
         df.to_excel("/home/jhpark/experiment_files/" + output_file_name + ".xlsx")
 
         print df
-
-    def remove_from_local_pc(self):
-        for filename in self.file_name_list:
-            path = os.path.join(self.local_path, filename)
-            if os.path.exists(path):
-                os.remove(path)
-            else:
-                print "cannot remove " + filename + " because the file does not exists in local pc"
+        return df
 
     def find_nearest_nwp_prediction_file_in_local(self, current_time, horizon_num):
         """
@@ -239,6 +238,24 @@ class FtpAccess:
 
         self.nearest_file_list = file_name_list
         return file_name_list
+
+    # for convinience
+    def check_total_size_of_files(self):
+        file_size = 0
+        file_num = 0
+        for file_name in self.file_name_list:
+            try:
+                file_size += self.ftp.size(file_name)
+                file_num += 1
+            except ftplib.error_perm:
+                print file_name + " not exists in ftp server"
+        print "total size of files : ", float(file_size)/(1024*1024*1024), "gb", ", total number of files :", file_num
+
+    def set_local_path(self, local_path="/home/jhpark/NWP"):
+        self.local_path = local_path
+
+    def set_prediction_model(self, model_path):
+        self.prediction_model = keras.models.load_model("irr_prediction_model.h5")
 
     def close(self):
         self.ftp.quit()

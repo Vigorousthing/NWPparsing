@@ -15,6 +15,6 @@ def extract_variable_values(ftp_accessor, data_type, fold_type, time_interval,
     ftp_accessor.set_file_names()
     ftp_accessor.check_total_size_of_files()
     ftp_accessor.save_file_from_ftp_server()
-    ftp_accessor.extract_variable_values_from_saved_files(var_list, nearest_type, point, "experimental")
+    ftp_accessor.extract_variable_values("tarining", var_list, nearest_type, point, "experimental")
     ftp_accessor.close()
 
