@@ -8,6 +8,8 @@ import pandas as pd
 from haversine import *
 import matplotlib.pyplot as plt
 import keras
+import time
+import sys
 
 
 class NwpFileHandler:
@@ -95,7 +97,8 @@ class NwpFileHandler:
 
     # functions handle file save/remove
     def save_file_from_ftp_server(self):
-        for filename in self.file_name_list:
+        visualizer = Visualize()
+        for num, filename in enumerate(self.file_name_list):
             try:
                 path = os.path.join(self.local_path, filename)
                 if os.path.exists(path):
@@ -108,6 +111,24 @@ class NwpFileHandler:
                 os.remove(path)
                 print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
 
+            visualizer.print_progress(num, len(self.file_name_list), 'Progress:', 'Complete', 1, 50)
+
+
+    def save_target_file(self, folder_name, filename, local_path):
+        try:
+            current_dir = "/" + folder_name
+            self.ftp.cwd(current_dir)
+
+            path = os.path.join(local_path, filename)
+            if os.path.exists(path):
+                print filename + " already exists in local pc"
+            new_file = open(path, "wb")
+            self.ftp.retrbinary("RETR " + filename, new_file.write)
+            new_file.close()
+        except ftplib.error_perm:
+            os.remove(path)
+            print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
+
     def remove_from_local_pc(self):
         for filename in self.file_name_list:
             path = os.path.join(self.local_path, filename)
@@ -117,7 +138,7 @@ class NwpFileHandler:
                 print "cannot remove " + filename + " because the file does not exists in local pc"
 
     # functions handle main jobs
-    def extract_variable_values(self, purpose, nwp_var_list, nearest_type, given_point, output_file_name="new"):
+    def extract_variable_values(self, purpose, nwp_var_list, nearest_type, given_point):
         # set analyzer
         nwp_grid_analyzer = NwpGridAnalyze()
 
@@ -185,8 +206,14 @@ class NwpFileHandler:
             row = pd.Series(row, index=col)
             df = df.append(row, ignore_index=True)
 
-        df.to_pickle("/home/jhpark/experiment_files/" + output_file_name + ".pkl")
-        df.to_excel("/home/jhpark/experiment_files/" + output_file_name + ".xlsx")
+            visualizer = Visualize()
+            for i in range(0, len(file_name_list)):
+                time.sleep(1)
+                visualizer.print_progress(i, len(file_name_list), 'Progress:', 'Complete', 1, 50)
+
+        save_file_name = purpose+str(self.time_interval[0])[:10]+str(self.time_interval[1])[:10]
+        df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
+        df.to_excel("/home/jhpark/experiment_files/" + save_file_name + ".xlsx")
 
         print df
         return df
@@ -229,9 +256,9 @@ class NwpFileHandler:
                 if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) in self.time_point):
                     file_name_list.append(filename)
                     break
-                elif abs((current_time - nearest_prediction_time).days) >= 2:
+                elif abs((current_time - nearest_prediction_time).days) >= 3:
                     file_name_list.append(None)
-                    print "no matched file in recent 2 days"
+                    print "no matched file in local"
                     break
                 else:
                     dif += 6
@@ -259,6 +286,29 @@ class NwpFileHandler:
 
     def close(self):
         self.ftp.quit()
+
+
+class Visualize:
+    def __init__(self):
+        pass
+
+    def correlation_matrix(self, df, col_name_list):
+        corr_df = df[col_name_list].corr()
+        plt.matshow(corr_df)
+        plt.xticks(range(len(corr_df.columns)), corr_df.columns)
+        plt.yticks(range(len(corr_df.columns)), corr_df.columns)
+        plt.colorbar()
+        plt.show()
+
+    def print_progress(self, iteration, total, prefix='', suffix='', decimals=1, barLength=100):
+        formatStr = "{0:." + str(decimals) + "f}"
+        percent = formatStr.format(100 * (iteration / float(total)))
+        filledLength = int(round(barLength * iteration / float(total)))
+        bar = '#' * filledLength + '-' * (barLength - filledLength)
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percent, '%', suffix)),
+        if iteration == total:
+            sys.stdout.write('\n')
+            sys.stdout.flush()
 
 
 class NwpGridAnalyze:

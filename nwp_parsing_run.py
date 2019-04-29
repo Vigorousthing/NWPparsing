@@ -1,5 +1,6 @@
 import ftp_CONSTANT
 from nwp_parsing import *
+import pickle
 import nwp_parsing_controller
 ##################################################################################################
 ip = ftp_CONSTANT.ftp_ip
@@ -23,13 +24,25 @@ point = (36, 128)
 data_type = "LDAPS"
 fold_type = "unis"
 # time_interval = ["2019-03-04 00", "2019-04-05 00"]
-time_interval = ["2019-04-06 00", "2019-04-15 00"]
-horizon_interval = [0, 36]
+time_interval = ["2019-04-05 18", "2019-04-15 00"]
+horizon_interval = [0, 12]
 var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS"]
 nearest_type = 1
 point = (37.57142, 126.9658)
 current_time = datetime.datetime.now()
 
+ftp_accessor = NwpFileHandler(ip, id, pw)
+ftp_accessor.data_type_setting(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
+ftp_accessor.set_file_names()
+# ftp_accessor.check_total_size_of_files()
+# ftp_accessor.save_file_from_ftp_server()
+# df = ftp_accessor.extract_variable_values("training", var_list, 1, point)
+
+with open("/home/jhpark/experiment_files/new.pkl", "rb") as f:
+    df = pickle.load(f)
+
+visualizer = Visualize()
+visualizer.correlation_matrix(df, var_list)
 
 # nwp_parsing_controller.extract_variable_values(ftp_accessor, data_type, fold_type, time_interval,
 #                                                var_list, nearest_type, point,
@@ -42,6 +55,7 @@ current_time = datetime.datetime.now()
 # print current_time-datetime.timedelta(days=11)
 # print nwp_file_handler.find_nearest_nwp_prediction_file_in_local(current_time-datetime.timedelta(days=11), 10)
 
+# ftp_accessor.save_target_file("RDAPS", "g120_v070_erea_pres_h060.2019041118.gb2", "/home/jhpark/experiment_sth")
 
 
 ##################################################################################################
@@ -57,6 +71,6 @@ if __name__ == "__main__":
     analyzer.set_lat_lon_grid(lat_grid, lon_grid)
     # analyzer.plot_base_point(lat_point, lon_point, lat, lon)
     # analyzer.plot_nearest_point(analyzer.around_four_grid_point(point[0], point[1]), point[0], point[1])
-    analyzer.plot_nearest_n_point(analyzer.nearest_n_grid_point(20, point[0], point[1]), point[0], point[1])
+    # analyzer.plot_nearest_n_point(analyzer.nearest_n_grid_point(20, point[0], point[1]), point[0], point[1])
     pass
 
