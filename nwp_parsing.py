@@ -8,7 +8,6 @@ import pandas as pd
 from haversine import *
 import matplotlib.pyplot as plt
 import keras
-import time
 import sys
 
 
@@ -113,7 +112,6 @@ class NwpFileHandler:
 
             visualizer.print_progress(num, len(self.file_name_list), 'Progress:', 'Complete', 1, 50)
 
-
     def save_target_file(self, folder_name, filename, local_path):
         try:
             current_dir = "/" + folder_name
@@ -138,9 +136,9 @@ class NwpFileHandler:
                 print "cannot remove " + filename + " because the file does not exists in local pc"
 
     # functions handle main jobs
-    def extract_variable_values(self, purpose, nwp_var_list, nearest_type, given_point):
+    def extract_variable_values(self, purpose, nwp_var_list, nearest_type, given_points_list):
         # set analyzer
-        nwp_grid_analyzer = NwpGridAnalyze()
+        nwp_grid_analyzer = NwpGridAnalyzer()
 
         path = os.path.join(self.local_path, self.file_name_list[0])
         temp_file = pygrib.open(path)
@@ -152,7 +150,7 @@ class NwpFileHandler:
         nwp_var_index_dic = pd.read_excel("LDAPS_variables_index_name.xlsx").set_index("var_abbrev")["index"]
 
         # make column list
-        col = ["CRTN_TM", "horizon", "FCST_TM"]
+        col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
         for var in nwp_var_list:
             col.append(var)
 
@@ -165,51 +163,52 @@ class NwpFileHandler:
         elif purpose == "prediction":
             file_name_list = self.nearest_file_list
 
+        visualizer = Visualize()
         # add rows to dataframe
-        for filename in file_name_list:
+        for i, filename in enumerate(file_name_list):
             path = os.path.join(self.local_path, filename)
             horizon = int(filename.split("h")[1].split(".")[0])
             # utc correction included in crtn_tm
             crtn_tm = datetime.datetime.strptime(filename.split("h")[1].split(".")[1], "%Y%m%d%H") + datetime.timedelta(hours=9)
             fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
 
-            row = [crtn_tm, horizon, fcst_tm]
-
             if os.path.exists(path) is False:
                 print "cannot extract values from " + filename + " because the file does not exists in local pc"
                 continue
             else:
                 nwp_file = pygrib.open(path)
-                for var_name in col:
-                    if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM":
-                        continue
-                    # extract variable index
-                    index = nwp_var_index_dic[var_name].item()
-                    if nearest_type == 1:
-                        # make grid data - by nearest_type
-                        # 1) load grid value data
-                        var_grid_values = nwp_file[index].values
-                        # 2) get grid indexes
-                        nearest_point_index = nwp_grid_analyzer.nearest_point_index(given_point[0], given_point[1])
-                        # 3) get value by index from grid
-                        value = var_grid_values[nearest_point_index[0]][nearest_point_index[1]]
-                    elif nearest_type == "n":
-                        # make grid data - by nearest_n_type
-                        # 1) load grid value data
-                        var_grid_values = nwp_file[index].values
-                        # 2) make dis_index_dic for n-nearest points
-                        nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
-                        # 3) interpolate values from n-nearest points
-                        value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
-                    row.append(value)
+                for given_point in given_points_list:
+                    row = [crtn_tm, horizon, fcst_tm, given_point]
+                    for var_name in col:
+                        # extract variable index
+                        index = nwp_var_index_dic[var_name].item()
+                        # already filled with
+                        if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM" or var_name == "Coordinates":
+                            continue
+                        if nearest_type == 1:
+                            # make grid data - by nearest_type
+                            # 1) load grid value data
+                            var_grid_values = nwp_file[index].values
+                            # 2) get grid indexes
+                            nearest_point_index = nwp_grid_analyzer.nearest_point_index(given_point[0], given_point[1])
+                            # 3) get value by index from grid
+                            value = var_grid_values[nearest_point_index[0]][nearest_point_index[1]]
+                        elif nearest_type == "n":
+                            # make grid data - by nearest_n_type
+                            # 1) load grid value data
+                            var_grid_values = nwp_file[index].values
+                            # 2) make dis_index_dic for n-nearest points
+                            nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
+                            # 3) interpolate values from n-nearest points
+                            value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
+                        row.append(value)
+
                 nwp_file.close()
+
             row = pd.Series(row, index=col)
             df = df.append(row, ignore_index=True)
 
-            visualizer = Visualize()
-            for i in range(0, len(file_name_list)):
-                time.sleep(1)
-                visualizer.print_progress(i, len(file_name_list), 'Progress:', 'Complete', 1, 50)
+            visualizer.print_progress(i, len(file_name_list), 'Progress:', 'Complete', 1, 50)
 
         save_file_name = purpose+str(self.time_interval[0])[:10]+str(self.time_interval[1])[:10]
         df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
@@ -311,7 +310,7 @@ class Visualize:
             sys.stdout.flush()
 
 
-class NwpGridAnalyze:
+class NwpGridAnalyzer:
     def __init__(self):
         self.lat_grid = None
         self.lon_grid = None

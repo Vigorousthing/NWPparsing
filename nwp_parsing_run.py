@@ -28,7 +28,7 @@ time_interval = ["2019-04-05 18", "2019-04-15 00"]
 horizon_interval = [0, 12]
 var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS"]
 nearest_type = 1
-point = (37.57142, 126.9658)
+point = [(37.57142, 126.9658)]
 current_time = datetime.datetime.now()
 
 ftp_accessor = NwpFileHandler(ip, id, pw)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     lat_grid, lon_grid = nwp_file[4].latlons()
     # point = (37.57142, 126.9658)
     #
-    analyzer = NwpGridAnalyze()
+    analyzer = NwpGridAnalyzer()
     analyzer.set_lat_lon_grid(lat_grid, lon_grid)
     # analyzer.plot_base_point(lat_point, lon_point, lat, lon)
     # analyzer.plot_nearest_point(analyzer.around_four_grid_point(point[0], point[1]), point[0], point[1])
