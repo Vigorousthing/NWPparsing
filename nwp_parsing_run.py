@@ -28,12 +28,14 @@ time_interval = ["2019-03-04 00", "2019-05-05 00"]
 horizon_interval = [0, 6]
 time_point = ["00", "09", "12", "18"]
 time_point = ["00", "09", "18"]
-# var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
-var_list = "all"
+var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
+# var_list = "all"
 nearest_type = 1
 # point = [(37.57142, 126.9658)]
 # point = convenience_functions(None)
-point = [(37.38916, 127.62097), (37.36872, 127.64302), (34.59612, 126.29099), (36.17202, 126.78948), (37.10368, 128.24847)]
+# point = [(37.38916, 127.62097), (37.36872, 127.64302), (34.59612, 126.29099), (36.17202, 126.78948), (37.10368, 128.24847)]
+
+point = [(37.566601, 127.168451), (37.701720, 127.052289), (37.651369, 126.906272), (37.578967, 126.793614)]
 current_time = datetime.datetime.now()
 
 # real_df condition
