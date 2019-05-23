@@ -29,18 +29,37 @@ class NwpFileHandler:
 
         self.file_name_list = []
 
-        # self.nearest_file_list = []
+        self.nwp_var_list = None
+        self.nearest_type = None
+        self.given_points_list = None
 
         self.prediction_model = None
 
         self.local_path = "/home/jhpark/NWP"
 
-    def data_type_setting(self, data_type, fold_type, time_interval, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
+    def set_for_files(self, data_type, fold_type, time_interval, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
         self.data_type = data_type
         self.fold_type = fold_type
         self.time_interval = time_interval
         self.horizon_interval = horizon_interval
         self.time_point = time_point
+
+    def set_for_values(self, nwp_var_list, nearest_type, given_points_list):
+        self.nwp_var_list = nwp_var_list
+        self.nearest_type = nearest_type
+        self.given_points_list = given_points_list
+
+    # def set_fixed_variables(self, data_type, fold_type, time_interval, nwp_var_list, nearest_type, given_points_list,
+    # horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
+    #     self.data_type = data_type
+    #     self.fold_type = fold_type
+    #     self.time_interval = time_interval
+    #     self.horizon_interval = horizon_interval
+    #     self.time_point = time_point
+    #
+    #     self.nwp_var_list = nwp_var_list
+    #     self.nearest_type = nearest_type
+    #     self.given_points_list = given_points_list
 
     def set_file_names(self):
         dir_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
@@ -93,141 +112,7 @@ class NwpFileHandler:
 
             current_index_for_time_interval += 1
 
-    # functions handle file save/remove
-    def save_file_from_ftp_server(self):
-        current_dir = "/" + self.data_type
-        self.ftp.cwd(current_dir)
-
-        visualizer = Visualizer()
-        for num, filename in enumerate(self.file_name_list):
-            try:
-                path = os.path.join(self.local_path, filename)
-                if os.path.exists(path):
-                    print filename + " already exists in local pc"
-                    continue
-                new_file = open(path, "wb")
-                self.ftp.retrbinary("RETR " + filename, new_file.write)
-                new_file.close()
-            except ftplib.error_perm:
-                os.remove(path)
-                print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
-
-            visualizer.print_progress(num, len(self.file_name_list), 'Download Progress:', 'Complete', 1, 50)
-
-    def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
-        try:
-            current_dir = "/" + folder_name
-            self.ftp.cwd(current_dir)
-
-            path = os.path.join(local_path, filename)
-            if os.path.exists(path):
-                print filename + " already exists in local pc"
-            new_file = open(path, "wb")
-            self.ftp.retrbinary("RETR " + filename, new_file.write)
-            new_file.close()
-        except ftplib.error_perm:
-            os.remove(path)
-            print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
-
-    def remove_from_local_pc(self):
-        for filename in self.file_name_list:
-            path = os.path.join(self.local_path, filename)
-            if os.path.exists(path):
-                os.remove(path)
-            else:
-                print "cannot remove " + filename + " because the file does not exists in local pc"
-
-    # functions handle main jobs
-    def extract_variable_values(self, purpose, nwp_var_list, nearest_type, given_points_list):
-        # set analyzer
-        nwp_grid_analyzer = NwpGridAnalyzer()
-
-        # align filename with purpose
-        # if purpose == "training":
-        #     file_name_list = self.file_name_list
-        # elif purpose == "prediction":
-        #     file_name_list = self.nearest_file_list
-        file_name_list = self.file_name_list
-
-        path = os.path.join(self.local_path, file_name_list[0])
-        temp_file = pygrib.open(path)
-        lat_grid, lon_grid = temp_file[1].latlons()
-        nwp_grid_analyzer.set_lat_lon_grid(lat_grid, lon_grid)
-        temp_file.close()
-
-        # make var index dic
-        nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
-        nwp_var_index_dic = nwp_var_info.set_index("var_abbrev")["index"]
-
-        # make column list
-        col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
-        if nwp_var_list == "all":
-            nwp_var_list = pd.read_excel("LDAPS_variables_index_name.xlsx").set_index("index")["var_abbrev"].to_list()
-        for var in nwp_var_list:
-            col.append(var)
-
-        # set dataframe
-        df = pd.DataFrame(columns=col)
-
-        visualizer = Visualizer()
-        # add rows to dataframe
-        for i, filename in enumerate(file_name_list):
-            if filename is None:
-                continue
-            path = os.path.join(self.local_path, filename)
-            horizon = int(filename.split("h")[1].split(".")[0])
-            # utc correction included in crtn_tm
-            crtn_tm = datetime.datetime.strptime(filename.split("h")[1].split(".")[1], "%Y%m%d%H") + datetime.timedelta(hours=9)
-            fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
-
-            if os.path.exists(path) is False:
-                print "cannot extract values from " + filename + " because the file does not exists in local pc"
-                continue
-            else:
-                nwp_file = pygrib.open(path)
-                for given_point in given_points_list:
-                    row = [crtn_tm, horizon, fcst_tm, given_point]
-                    for var_name in col:
-                        # extract variable index
-                        # already filled with
-                        if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM" or var_name == "Coordinates":
-                            continue
-                        index = nwp_var_index_dic[var_name].item()
-                        if nearest_type == 1:
-                            # make grid data - by nearest_type
-                            # 1) load grid value data
-                            var_grid_values = nwp_file[index].values
-                            # 2) get grid indexes
-                            nearest_point_index = nwp_grid_analyzer.nearest_point_index(given_point[0], given_point[1])
-                            # 3) get value by index from grid
-                            value = var_grid_values[nearest_point_index[0]][nearest_point_index[1]]
-                        elif nearest_type == "n":
-                            # make grid data - by nearest_n_type
-                            # 1) load grid value data
-                            var_grid_values = nwp_file[index].values
-                            # 2) make dis_index_dic for n-nearest points
-                            nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
-                            # 3) interpolate values from n-nearest points
-                            value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
-                        row.append(value)
-                    row = pd.Series(row, index=col)
-                    df = df.append(row, ignore_index=True)
-                nwp_file.close()
-            visualizer.print_progress(i, len(file_name_list), 'Value Extract Progress:', 'Complete', 1, 50)
-
-        strings = string.ascii_letters
-        result = ""
-        for i in range(10):
-            result += random.choice(strings)
-
-        save_file_name = purpose+str(self.time_interval[0])[:10]+str(self.time_interval[1])[:10] + result
-        df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
-        df.to_excel("/home/jhpark/experiment_files/" + save_file_name + ".xlsx")
-
-        print df
-        return df
-
-    def set_nearest_nwp_prediction_file(self, current_time, horizon_num):
+    def set_nearest_nwp_prediction_file_from_current_time(self, current_time, horizon_num):
         """
         this function intends to find latest nwp prediction file towards each time horizon from current time
         if local file system does not have a such file, then missing value should be interpolated
@@ -290,6 +175,134 @@ class NwpFileHandler:
         self.file_name_list = file_name_list
         return file_name_list
 
+    # functions handle main jobs
+    def extract_variable_values(self):
+        # set analyzer
+        nwp_grid_analyzer = NwpGridAnalyzer()
+
+        # align filename with purpose
+        # if purpose == "training":
+        #     file_name_list = self.file_name_list
+        # elif purpose == "prediction":
+        #     file_name_list = self.nearest_file_list
+        file_name_list = self.file_name_list
+
+        path = os.path.join(self.local_path, file_name_list[0])
+        temp_file = pygrib.open(path)
+        lat_grid, lon_grid = temp_file[1].latlons()
+        nwp_grid_analyzer.set_lat_lon_grid(lat_grid, lon_grid)
+        temp_file.close()
+
+        # make var index dic
+        nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
+        nwp_var_index_dic = nwp_var_info.set_index("var_abbrev")["index"]
+
+        # make column list
+        col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
+        if self.nwp_var_list == "all":
+            self.nwp_var_list = pd.read_excel("LDAPS_variables_index_name.xlsx").set_index("index")["var_abbrev"].to_list()
+        for var in self.nwp_var_list:
+            col.append(var)
+
+        # set dataframe
+        df = pd.DataFrame(columns=col)
+
+        visualizer = Visualizer()
+        # add rows to dataframe
+        for i, filename in enumerate(file_name_list):
+            if filename is None:
+                continue
+            path = os.path.join(self.local_path, filename)
+            horizon = int(filename.split("h")[1].split(".")[0])
+            # utc correction included in crtn_tm
+            crtn_tm = datetime.datetime.strptime(filename.split("h")[1].split(".")[1], "%Y%m%d%H") + datetime.timedelta(hours=9)
+            fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
+
+            if os.path.exists(path) is False:
+                print "cannot extract values from " + filename + " because the file does not exists in local pc"
+                continue
+            else:
+                nwp_file = pygrib.open(path)
+                for given_point in self.given_points_list:
+                    row = [crtn_tm, horizon, fcst_tm, given_point]
+                    for var_name in col:
+                        # extract variable index
+                        # already filled with
+                        if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM" or var_name == "Coordinates":
+                            continue
+                        index = nwp_var_index_dic[var_name].item()
+                        if self.nearest_type == 1:
+                            # make grid data - by nearest_type
+                            # 1) load grid value data
+                            var_grid_values = nwp_file[index].values
+                            # 2) get grid indexes
+                            nearest_point_index = nwp_grid_analyzer.nearest_point_index(given_point[0], given_point[1])
+                            # 3) get value by index from grid
+                            value = var_grid_values[nearest_point_index[0]][nearest_point_index[1]]
+                        elif self.nearest_type == "n":
+                            # make grid data - by nearest_n_type
+                            # 1) load grid value data
+                            var_grid_values = nwp_file[index].values
+                            # 2) make dis_index_dic for n-nearest points
+                            nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
+                            # 3) interpolate values from n-nearest points
+                            value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
+                        row.append(value)
+                    row = pd.Series(row, index=col)
+                    df = df.append(row, ignore_index=True)
+                nwp_file.close()
+            visualizer.print_progress(i, len(file_name_list), 'Value Extract Progress:', 'Complete', 1, 50)
+
+        strings = string.ascii_letters
+        result = ""
+        for i in range(10):
+            result += random.choice(strings)
+
+        save_file_name = str(self.time_interval[0])[:10]+str(self.time_interval[1])[:10] + result
+        df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
+        df.to_excel("/home/jhpark/experiment_files/" + save_file_name + ".xlsx")
+
+        print df
+        return df
+
+    def make_historical_prediction_data(self, horizon_num, comparison_type):
+        start_time = self.time_interval[0]
+        end_time = self.time_interval[1]
+
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H")
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H")
+
+        # UTC correction
+        start_time = start_time - datetime.timedelta(hours=9)
+        end_time = end_time - datetime.timedelta(hours=9)
+
+        current_time = start_time
+
+        # length of time horizon
+        horizon_num = horizon_num + 1
+
+        # initialize dataframe
+        col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
+        if self.nwp_var_list == "all":
+            self.nwp_var_list = pd.read_excel("LDAPS_variables_index_name.xlsx").set_index("index")["var_abbrev"].to_list()
+        for var in self.nwp_var_list:
+            col.append(var)
+        df = pd.DataFrame(columns=col)
+
+        while 1:
+            self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
+            df_each_prediction = self.extract_variable_values()
+            if comparison_type == "daily":
+                current_time = current_time + datetime.timedelta(hours=24)
+                pass
+            elif comparison_type == "hourly":
+                current_time = current_time + datetime.timedelta(hours=1)
+                pass
+            if current_time > end_time:
+                break
+            df = df.append(df_each_prediction)
+        return df
+
     # for vpp site
     # def vpp_real_data_nwp_merge(self, prediction_df, time_point, target_plants=None):
     #     import convenience_functions
@@ -310,6 +323,50 @@ class NwpFileHandler:
     #     print merged_df
     #
     #     return
+
+    # functions handle file save/remove
+    def save_file_from_ftp_server(self):
+        current_dir = "/" + self.data_type
+        self.ftp.cwd(current_dir)
+
+        visualizer = Visualizer()
+        for num, filename in enumerate(self.file_name_list):
+            try:
+                path = os.path.join(self.local_path, filename)
+                if os.path.exists(path):
+                    print filename + " already exists in local pc"
+                    continue
+                new_file = open(path, "wb")
+                self.ftp.retrbinary("RETR " + filename, new_file.write)
+                new_file.close()
+            except ftplib.error_perm:
+                os.remove(path)
+                print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
+
+            visualizer.print_progress(num, len(self.file_name_list), 'Download Progress:', 'Complete', 1, 50)
+
+    def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
+        try:
+            current_dir = "/" + folder_name
+            self.ftp.cwd(current_dir)
+
+            path = os.path.join(local_path, filename)
+            if os.path.exists(path):
+                print filename + " already exists in local pc"
+            new_file = open(path, "wb")
+            self.ftp.retrbinary("RETR " + filename, new_file.write)
+            new_file.close()
+        except ftplib.error_perm:
+            os.remove(path)
+            print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
+
+    def remove_from_local_pc(self):
+        for filename in self.file_name_list:
+            path = os.path.join(self.local_path, filename)
+            if os.path.exists(path):
+                os.remove(path)
+            else:
+                print "cannot remove " + filename + " because the file does not exists in local pc"
 
     # for convinience
     def check_total_size_of_files(self):
