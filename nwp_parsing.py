@@ -165,10 +165,15 @@ class NwpFileHandler:
                         else:
                             new_file = open(path, "wb")
                             self.ftp.retrbinary("RETR " + filename, new_file.write)
+                            file_name_list.append(filename)
                             new_file.close()
                             break
                     except ftplib.error_perm:
                         os.remove(path)
+
+                        if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
+                            break
+
                         # print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
                         dif += 6
 
@@ -272,10 +277,6 @@ class NwpFileHandler:
         start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H")
         end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H")
 
-        # UTC correction
-        start_time = start_time - datetime.timedelta(hours=9)
-        end_time = end_time - datetime.timedelta(hours=9)
-
         current_time = start_time
 
         # length of time horizon
@@ -292,15 +293,14 @@ class NwpFileHandler:
         while 1:
             self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
             df_each_prediction = self.extract_variable_values()
+            df = df.append(df_each_prediction, sort=False)
+
             if comparison_type == "daily":
                 current_time = current_time + datetime.timedelta(hours=24)
-                pass
             elif comparison_type == "hourly":
                 current_time = current_time + datetime.timedelta(hours=1)
-                pass
             if current_time > end_time:
                 break
-            df = df.append(df_each_prediction)
         return df
 
     # for vpp site
