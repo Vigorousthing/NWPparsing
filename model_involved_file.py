@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 dataset = pd.read_excel("/home/jhpark/experiment_files/510training.xlsx")
 df = np.array(dataset)
 
-print dataset
-print df
+print(dataset)
+print(df)
 
 # training_X = df[:6000, :7]
 # training_Y = df[:6000, 7]

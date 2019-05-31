@@ -73,12 +73,12 @@ current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
 ftp_accessor = NwpFileHandler(ip, id, pw, True)
 ftp_accessor.set_for_files(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
 ftp_accessor.set_for_values(var_list, nearest_type, point)
-
 ftp_accessor.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num=36)
 # call main job function
 # ftp_accessor.set_file_names()
 # ftp_accessor.save_file_from_ftp_server()
 # files = ftp_accessor.set_nearest_nwp_prediction_file(current_time, 36)
+
 df = ftp_accessor.extract_variable_values()
 df.to_excel("/home/jhpark/experiment_files/528prediction.xlsx")
 

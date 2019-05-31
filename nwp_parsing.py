@@ -1,10 +1,7 @@
-import os
-import re
 import ftplib
 import pygrib
 import datetime
 from math import *
-import pandas as pd
 from haversine import *
 import matplotlib.pyplot as plt
 import keras
@@ -142,7 +139,7 @@ class NwpFileHandler:
                 hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds/3600
                 day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
 
-                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i).zfill(3) + "." + \
+                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(int(hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i)).zfill(3) + "." + \
                            re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
 
                 path = os.path.join(self.local_path, filename)
@@ -152,7 +149,7 @@ class NwpFileHandler:
                     break
                 elif abs((current_time - nearest_prediction_time).days) >= 3:
                     file_name_list.append(None)
-                    print "no matched file in local and ftp server for" + " horizon " + str(i)
+                    print("no matched file in local and ftp server for" + " horizon " + str(i))
                     break
                 else:
                     try:
@@ -173,8 +170,7 @@ class NwpFileHandler:
 
                         if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
                             break
-
-                        # print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
+                        # print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
                         dif += 6
 
         self.file_name_list = file_name_list
@@ -224,7 +220,7 @@ class NwpFileHandler:
             fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
 
             if os.path.exists(path) is False:
-                print "cannot extract values from " + filename + " because the file does not exists in local pc"
+                print("cannot extract values from " + filename + " because the file does not exists in local pc")
                 continue
             else:
                 nwp_file = pygrib.open(path)
@@ -267,7 +263,7 @@ class NwpFileHandler:
         df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
         df.to_excel("/home/jhpark/experiment_files/" + save_file_name + ".xlsx")
 
-        print df
+        print(df)
         return df
 
     def make_historical_prediction_data(self, horizon_num, comparison_type):
@@ -334,14 +330,14 @@ class NwpFileHandler:
             try:
                 path = os.path.join(self.local_path, filename)
                 if os.path.exists(path):
-                    print filename + " already exists in local pc"
+                    print(filename + " already exists in local pc")
                     continue
                 new_file = open(path, "wb")
                 self.ftp.retrbinary("RETR " + filename, new_file.write)
                 new_file.close()
             except ftplib.error_perm:
                 os.remove(path)
-                print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
+                print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
 
             visualizer.print_progress(num, len(self.file_name_list), 'Download Progress:', 'Complete', 1, 50)
 
@@ -352,13 +348,13 @@ class NwpFileHandler:
 
             path = os.path.join(local_path, filename)
             if os.path.exists(path):
-                print filename + " already exists in local pc"
+                print(filename + " already exists in local pc")
             new_file = open(path, "wb")
             self.ftp.retrbinary("RETR " + filename, new_file.write)
             new_file.close()
         except ftplib.error_perm:
             os.remove(path)
-            print "cannot download " + filename + " from ftp server because the file does not exists in ftp server"
+            print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
 
     def remove_from_local_pc(self):
         for filename in self.file_name_list:
@@ -366,7 +362,7 @@ class NwpFileHandler:
             if os.path.exists(path):
                 os.remove(path)
             else:
-                print "cannot remove " + filename + " because the file does not exists in local pc"
+                print("cannot remove " + filename + " because the file does not exists in local pc")
 
     # for convinience
     def check_total_size_of_files(self):
@@ -382,8 +378,8 @@ class NwpFileHandler:
                     file_size += self.ftp.size(file_name)
                     file_num += 1
                 except ftplib.error_perm:
-                    print file_name + " not exists in ftp server"
-        print "total size of files : ", float(file_size)/(1024*1024*1024), "gb", ", total number of files :", file_num
+                    print(file_name + " not exists in ftp server")
+        print("total size of files : ", float(file_size)/(1024*1024*1024), "gb", ", total number of files :", file_num)
 
     def set_local_path(self, local_path="/home/jhpark/NWP"):
         self.local_path = local_path
