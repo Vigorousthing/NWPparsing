@@ -20,11 +20,13 @@ time_point = ["00", "12", "18"]
 point = (36, 128)
 '''
 
+
 data_type = "LDAPS"
 fold_type = "unis"
-time_interval = ["2019-03-04 00", "2019-05-05 00"]
+time_interval = ["2019-03-11 10", "2019-03-18 00"]
+# time_interval = ["2019-03-04 00", "2019-05-05 00"]
 # time_interval = ["2019-05-08 09", "2019-05-08 10"]
-horizon_interval = [0, 48]
+horizon_interval = [0, 6]
 time_point = ["00", "09", "12", "18"]
 time_point = ["00", "09", "18"]
 var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
@@ -34,6 +36,7 @@ nearest_type = 1
 # point = convenience_functions(None)
 # point = [(37.38916, 127.62097), (37.36872, 127.64302), (34.59612, 126.29099), (36.17202, 126.78948), (37.10368, 128.24847)]
 
+# goduk / dobong / jichook / gaehwa
 point = [(37.566601, 127.168451), (37.701720, 127.052289), (37.651369, 126.906272), (37.578967, 126.793614)]
 current_time = datetime.datetime.now()
 
@@ -66,21 +69,26 @@ current_time = datetime.datetime.now()
 # ftp_accessor.save_target_file("RDAPS", "g120_v070_erea_pres_h060.2019041118.gb2", "/home/jhpark/experiment_sth")
 
 # current_time = datetime.datetime.now() -datetime.timedelta(days=30)
-current_time = "2019-05-08 10"
-current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
+# current_time = "2019-05-08 10"
+# current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
 
 # base setting
 ftp_accessor = NwpFileHandler(ip, id, pw, True)
 ftp_accessor.set_for_files(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
 ftp_accessor.set_for_values(var_list, nearest_type, point)
 
-ftp_accessor.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num=48)
+df = ftp_accessor.make_historical_prediction_data(36, "daily")
+df.to_excel("/home/jhpark/experiment_files/523seoulprediction.xlsx")
+
+
 # call main job function
 # ftp_accessor.set_file_names()
 # ftp_accessor.save_file_from_ftp_server()
 # files = ftp_accessor.set_nearest_nwp_prediction_file(current_time, 36)
-df = ftp_accessor.extract_variable_values()
-df.to_excel("/home/jhpark/experiment_files/528prediction.xlsx")
+
+# df = ftp_accessor.extract_variable_values("training", var_list, nearest_type=1, given_points_list=point)
+# df.to_excel("/home/jhpark/experiment_files/513prediction.xlsx")
+
 
 # if __name__ == "__main__":
 #     nwp_file = pygrib.open("/home/jhpark/NWP/l015_v070_erlo_unis_h000.2019041518.gb2")
@@ -92,3 +100,4 @@ df.to_excel("/home/jhpark/experiment_files/528prediction.xlsx")
     # analyzer.plot_base_point(lat_point, lon_point, lat, lon)
     # f.plot_nearest_point(analyzer.around_four_grid_point(point[0], point[1]), point[0], point[1])
     # analyzer.plot_nearest_n_point(analyzer.nearest_n_grid_point(20, point[0], point[1]), point[0], point[1])
+

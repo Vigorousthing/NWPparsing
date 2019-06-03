@@ -10,10 +10,10 @@ data = data.drop("capacity", axis=1)
 dic = data.to_dict()["Coordinates"]
 
 site_name_list = []
-print dic
+print(dic)
 for key in dic:
     site_name_list.append(dic[key])
-print site_name_list
+print(site_name_list)
 # site_name_list = []
 # for i in point:
 #     site_name_list.append(dic[str(i)])

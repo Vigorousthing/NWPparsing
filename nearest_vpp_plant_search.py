@@ -36,4 +36,4 @@ for row_num in range(sheet.nrows):
     # latlon_dic[coordinate] = sheet.row_values(row_num)[0]
 
 given_point = (35.832973, 127.120376)
-print nearest_point(given_point, latlon_list)
+print(nearest_point(given_point, latlon_list))
