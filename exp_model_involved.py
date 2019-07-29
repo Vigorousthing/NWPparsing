@@ -48,18 +48,18 @@ model = keras.models.load_model("521prediction.h5")
 
 prediction = model.predict(prediction_X)
 
-print prediction
+print(prediction)
 prediction = np.asarray([x[0] for x in prediction])
 np.savetxt("0409prediction.csv", prediction, delimiter=",")
 
 nape_list = np.abs(prediction - real_Y)/99
 
-print "------------------------------------------------------------"
+print("------------------------------------------------------------")
 nmape = np.average(nape_list)
-print "nmape : ", nmape
+print("nmape : ", nmape)
 # print nape_list
 nmape = np.average(nape_list.nonzero())
-print "nmape zero removed : ", nmape
+print("nmape zero removed : ", nmape)
 
 length = len(prediction)
 plt.plot(range(length), prediction)

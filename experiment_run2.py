@@ -23,12 +23,12 @@ point = (36, 128)
 
 data_type = "LDAPS"
 fold_type = "unis"
-time_interval = ["2019-03-11 10", "2019-03-18 00"]
+time_interval = ["2019-03-11 00", "2019-03-18 00"]
 # time_interval = ["2019-03-04 00", "2019-05-05 00"]
 # time_interval = ["2019-05-08 09", "2019-05-08 10"]
 horizon_interval = [0, 6]
 time_point = ["00", "09", "12", "18"]
-time_point = ["00", "09", "18"]
+# time_point = ["00", "09", "18"]
 var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
 # var_list = "all"
 nearest_type = 1
@@ -76,9 +76,11 @@ current_time = datetime.datetime.now()
 ftp_accessor = NwpFileHandler(ip, id, pw, True)
 ftp_accessor.set_for_files(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
 ftp_accessor.set_for_values(var_list, nearest_type, point)
+ftp_accessor.set_file_names()
 
-df = ftp_accessor.make_historical_prediction_data(36, "daily")
-df.to_excel("/home/jhpark/experiment_files/523seoulprediction.xlsx")
+df = ftp_accessor.make_historical_prediction_data(36, "hourly")
+print(df)
+# df.to_excel("/home/jhpark/experiment_files/0605seoulprediction.xlsx")
 
 
 # call main job function

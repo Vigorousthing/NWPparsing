@@ -23,6 +23,7 @@ class NwpFileHandler:
         self.fold_type = None
         self.time_interval = None
         self.time_point = None
+        self.horizon_interval = None
 
         self.file_name_list = []
 
@@ -34,7 +35,7 @@ class NwpFileHandler:
 
         self.local_path = "/home/jhpark/NWP"
 
-    def set_for_files(self, data_type, fold_type, time_interval, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
+    def set_for_files(self, data_type, fold_type, time_interval=None, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
         self.data_type = data_type
         self.fold_type = fold_type
         self.time_interval = time_interval
@@ -170,14 +171,14 @@ class NwpFileHandler:
 
                         if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
                             break
-                        # print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+                        print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
                         dif += 6
 
         self.file_name_list = file_name_list
         return file_name_list
 
     # functions handle main jobs
-    def extract_variable_values(self):
+    def extract_variable_values(self, current_time=None):
         # set analyzer
         nwp_grid_analyzer = NwpGridAnalyzer()
 
@@ -216,54 +217,70 @@ class NwpFileHandler:
             path = os.path.join(self.local_path, filename)
             horizon = int(filename.split("h")[1].split(".")[0])
             # utc correction included in crtn_tm
-            crtn_tm = datetime.datetime.strptime(filename.split("h")[1].split(".")[1], "%Y%m%d%H") + datetime.timedelta(hours=9)
-            fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
+            if current_time is None:
+                crtn_tm = datetime.datetime.strptime(filename.split("h")[1].split(".")[1], "%Y%m%d%H") + datetime.timedelta(hours=9)
+                fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
+            else:
+                original_crtn_tm = datetime.datetime.strptime(filename.split("h")[1].split(".")[1], "%Y%m%d%H") + datetime.timedelta(hours=9)
+                crtn_tm = current_time
+                fcst_tm = original_crtn_tm + datetime.timedelta(hours=horizon)
+
+                day_dif = (fcst_tm - crtn_tm).days
+                hour_dif = int((fcst_tm - crtn_tm).seconds / 3600)
+
+                horizon = day_dif*24 + hour_dif
+
+                # fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
 
             if os.path.exists(path) is False:
                 print("cannot extract values from " + filename + " because the file does not exists in local pc")
                 continue
             else:
-                nwp_file = pygrib.open(path)
-                for given_point in self.given_points_list:
-                    row = [crtn_tm, horizon, fcst_tm, given_point]
-                    for var_name in col:
-                        # extract variable index
-                        # already filled with
-                        if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM" or var_name == "Coordinates":
-                            continue
-                        index = nwp_var_index_dic[var_name].item()
-                        if self.nearest_type == 1:
-                            # make grid data - by nearest_type
-                            # 1) load grid value data
-                            var_grid_values = nwp_file[index].values
-                            # 2) get grid indexes
-                            nearest_point_index = nwp_grid_analyzer.nearest_point_index(given_point[0], given_point[1])
-                            # 3) get value by index from grid
-                            value = var_grid_values[nearest_point_index[0]][nearest_point_index[1]]
-                        elif self.nearest_type == "n":
-                            # make grid data - by nearest_n_type
-                            # 1) load grid value data
-                            var_grid_values = nwp_file[index].values
-                            # 2) make dis_index_dic for n-nearest points
-                            nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
-                            # 3) interpolate values from n-nearest points
-                            value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
-                        row.append(value)
-                    row = pd.Series(row, index=col)
-                    df = df.append(row, ignore_index=True)
-                nwp_file.close()
+                try:
+                    nwp_file = pygrib.open(path)
+                    for given_point in self.given_points_list:
+                        row = [crtn_tm, horizon, fcst_tm, given_point]
+                        for var_name in col:
+                            # extract variable index
+                            # already filled with
+                            if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM" or var_name == "Coordinates":
+                                continue
+                            index = nwp_var_index_dic[var_name].item()
+                            if self.nearest_type == 1:
+                                # make grid data - by nearest_type
+                                # 1) load grid value data
+                                var_grid_values = nwp_file[index].values
+                                # 2) get grid indexes
+                                nearest_point_index = nwp_grid_analyzer.nearest_point_index(given_point[0], given_point[1])
+                                # 3) get value by index from grid
+                                value = var_grid_values[nearest_point_index[0]][nearest_point_index[1]]
+                            # nearest type : parameter input needs to be modified > nearest type as int
+                            elif self.nearest_type == "n":
+                                # make grid data - by nearest_n_type
+                                # 1) load grid value data
+                                var_grid_values = nwp_file[index].values
+                                # 2) make dis_index_dic for n-nearest points
+                                nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
+                                # 3) interpolate values from n-nearest points
+                                value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
+                            row.append(value)
+                        row = pd.Series(row, index=col)
+                        df = df.append(row, ignore_index=True)
+                    nwp_file.close()
+                except BaseException as e:
+                    print(e, ": Runtime Error Ocurred with file {}".format(filename))
             visualizer.print_progress(i, len(file_name_list), 'Value Extract Progress:', 'Complete', 1, 50)
 
-        strings = string.ascii_letters
-        result = ""
-        for i in range(10):
-            result += random.choice(strings)
+        # strings = string.ascii_letters
+        # result = ""
+        # for i in range(10):
+        #     result += random.choice(strings)
 
-        save_file_name = str(self.time_interval[0])[:10]+str(self.time_interval[1])[:10] + result
-        df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
-        df.to_excel("/home/jhpark/experiment_files/" + save_file_name + ".xlsx")
+        # save_file_name = str(self.time_interval[0])[:10]+str(self.time_interval[1])[:10] + result
+        # df.to_pickle("/home/jhpark/experiment_files/" + save_file_name + ".pkl")
+        # df.to_excel("/home/jhpark/experiment_files/" + save_file_name + ".xlsx")
 
-        print(df)
+        # print(df)
         return df
 
     def make_historical_prediction_data(self, horizon_num, comparison_type):
@@ -288,7 +305,7 @@ class NwpFileHandler:
 
         while 1:
             self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
-            df_each_prediction = self.extract_variable_values()
+            df_each_prediction = self.extract_variable_values(current_time)
             df = df.append(df_each_prediction, sort=False)
 
             if comparison_type == "daily":
@@ -586,10 +603,10 @@ class NwpGridAnalyzer:
 
     def plot_base_point(self, lat_given, lon_given):
         for i in range(len(self.lon_grid)):
-            plt.plot(self.lon_grid[i], self.lat_grid[i], "ro", color="green")
+            plt.plot(self.lon_grid[i], self.lat_grid[i], "ro", color="red", markersize=0.1)
             # plt.plot(self.lon_grid[i][:50], self.lat_grid[i][:50], "ro", color="blue")
             # if i > 1:
             #     break
-        plt.plot(lon_given, lat_given, "ro", color="red")
+        # plt.plot(lon_given, lat_given, "ro", color="blue")
         plt.grid(True)
         plt.show()

@@ -165,3 +165,127 @@ from multiprocessing import Process
 # a = Philosopher(fork1, fork2, "Plato")
 # a.run()
 
+# def our_thread(i):
+#     print("thread {} started".format(i))
+#     time.sleep(i*2)
+#     print("thread {} finished".format(i))
+#
+#
+# thread1 = threading.Thread(target=our_thread, args=(1,))
+# thread1.start()
+# print("is thread 1 finished?")
+#
+# thread2 = threading.Thread(target=our_thread, args=(2,))
+# thread2.start()
+# # thread2.join()
+# print("thread 2 is definetely finished")
+
+# counter = 1
+# def worker_a():
+#     global counter
+#     while counter < 1000:
+#         counter += 1
+#         print("worker a is incrementing counter to {}".format(counter))
+#         # sleeptime = random.randint(0, 1)
+#         # time.sleep(sleeptime)
+#
+#
+# def worker_b():
+#     global counter
+#     while counter > -1000:
+#         counter -= 1
+#         print("worker b is decrementing counter to {}".format(counter))
+#         # sleeptime = random.randint(0, 1)
+#         # time.sleep(sleeptime)
+#
+# t0 = time.time()
+# thread1 = threading.Thread(target=worker_a)
+# thread2 = threading.Thread(target=worker_b)
+# thread1.start()
+# thread2.start()
+# thread1.join()
+# thread2.join()
+# t1 = time.time()
+# print("execution time {}".format(t1 - t0))
+
+
+# counter = 1
+# lock = threading.Lock()
+#
+#
+# def worker_a():
+#     global counter
+#     lock.acquire()
+#     try:
+#         while counter < 1000:
+#             counter += 1
+#             print("worker a is incrementing counter to {}".format(counter))
+#             # sleeptime = random.randint(0, 1)
+#             # time.sleep(sleeptime)
+#     finally:
+#         lock.release()
+#
+#
+# def worker_b():
+#     global counter
+#     lock.acquire()
+#     try:
+#         while counter > -1000:
+#             counter -= 1
+#             print("worker b is decrementing counter to {}".format(counter))
+#             # sleeptime = random.randint(0, 1)
+#             # time.sleep(sleeptime)
+#     finally:
+#         lock.release()
+#
+#
+# t0 = time.time()
+# thread1 = threading.Thread(target=worker_a)
+# thread2 = threading.Thread(target=worker_b)
+# thread1.start()
+# thread2.start()
+# thread1.join()
+# thread2.join()
+# t1 = time.time()
+# print("execution time {}".format(t1 - t0))
+
+
+# class MyWorker:
+#     def __init__(self):
+#         self.a = 1
+#         self.b = 2
+#         self.r_lock = threading.RLock()
+#         self.p_lock = threading.Lock()
+#
+#     def modify_a(self):
+#         with self.p_lock:
+#
+#             # print("modify a : RLock acquired: {}".format(self.r_lock._is_owned()))
+#             print("{}".format(self.p_lock))
+#             self.a = self.a + 1
+#             time.sleep(3)
+#
+#     def modify_b(self):
+#         with self.p_lock:
+#             # print("modify b : RLock acquired: {}".format(self.r_lock._is_owned()))
+#             print("{}".format(self.p_lock))
+#             self.b = self.b + 1
+#             time.sleep(3)
+#
+#     def modify_both(self):
+#         with self.p_lock:
+#             print("RLock acquired, modifying A and B")
+#             print("{}".format(self.p_lock))
+#             self.modify_a()
+#             self.modify_b()
+#             print("{}".format(self.p_lock))
+#
+# worker_a = MyWorker()
+# worker_a.modify_both()
+
+
+import datetime
+
+current_time = datetime.datetime.now()
+print(current_time)
+current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")

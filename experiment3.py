@@ -1,14 +1,17 @@
-import threading
+import datetime
 
+current_time = "2019-04-10 19"
+current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
 
-class Philosopher(threading.Thread):
-    seat_num = 0
+current_time2 = "2019-04-09 10"
+current_time2 = datetime.datetime.strptime(current_time2, "%Y-%m-%d %H")
 
-    def __init__(self, left, right):
-        threading.Thread.__init__(self)
-        self.left_fork = left
-        self.right_fork = right
+dif = current_time - current_time2
 
+print(dif)
+day = dif.days
+hour = int(dif.seconds/3600)
 
-a = Philosopher(1,2)
-b = Philosopher(1,2)
+# print(int(dif.seconds/3600))
+
+print(day, hour)
