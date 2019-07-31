@@ -86,7 +86,8 @@ class NwpFileHandler:
         time_interval = []
         for i, val in enumerate(self.time_point):
             if i + 1 == len(self.time_point):
-                time_interval.append(int(self.time_point[((i + 1) % len(self.time_point))]) + 24 - int(val))
+                # time_interval.append(int(self.time_point[((i + 1) % len(self.time_point))]) + 24 - int(val))
+                time_interval.append(int(self.time_point[0]) + 24 - int(val))
                 break
             else:
                 time_interval.append(int(self.time_point[i+1]) - int(val))
@@ -118,7 +119,8 @@ class NwpFileHandler:
         # number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
 
         # data type and filename part pair
-        dir_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
+        prefix_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
+        model_type_dic = {"RDAPS": "_v070_erea_", "LDAPS": "_v070_erlo_", "SATELLIE": None, "AWS": None, "ASOS": None}
 
         # length of time horizon
         horizon_num = horizon_num + 1
@@ -137,42 +139,80 @@ class NwpFileHandler:
                 nearest_prediction_time = current_time - datetime.timedelta(hours=dif)
                 re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(nearest_prediction_time))[:8]
 
-                hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds/3600
-                day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+                # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds/3600
+                # day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
 
-                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(int(hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i)).zfill(3) + "." + \
-                           re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
+                if current_time.hour >= nearest_prediction_time.hour:
+                    # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds / 3600
+                    hour_dif_from_prediction_time = current_time.hour - nearest_prediction_time.hour
+                    day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+                elif current_time.hour < nearest_prediction_time.hour:
+                    hour_dif_from_prediction_time = current_time.hour + (24 - nearest_prediction_time.hour)
+                    day_dif_from_prediction_time = (current_time - nearest_prediction_time).days - 1
 
+                filename = prefix_dic[self.data_type] + model_type_dic[self.data_type] + self.fold_type + "_h" + \
+                           str(int(hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i)).zfill(3) + \
+                           "." + re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
                 path = os.path.join(self.local_path, filename)
 
                 if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) in self.time_point):
                     file_name_list.append(filename)
                     break
-                elif abs((current_time - nearest_prediction_time).days) >= 3:
-                    file_name_list.append(None)
-                    print("no matched file in local and ftp server for" + " horizon " + str(i))
-                    break
+                elif day_dif_from_prediction_time > 2:
+                    if self.data_type == "LDAPS":
+                        file_name_list.append(None)
+                        print("no matched file in local and ftp server for" + " horizon " + str(i))
+                        break
+                    elif self.data_type == "RDAPS" and day_dif_from_prediction_time > 4:
+                        file_name_list.append(None)
+                        print("no matched file in local and ftp server for" + " horizon " + str(i))
+                        break
                 else:
-                    try:
-                        current_dir = "/" + self.data_type
-                        self.ftp.cwd(current_dir)
+                    current_dir = "/" + self.data_type
+                    self.ftp.cwd(current_dir)
 
-                        path = os.path.join("/home/jhpark/NWP", filename)
-                        if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) not in self.time_point):
-                            dif += 6
+                    if (os.path.exists(path) or (filename in self.ftp.nlst(current_dir))) and (str(nearest_prediction_time.hour).zfill(2) not in self.time_point):
+                        dif += 6
+                    elif not os.path.exists(path) and filename not in self.ftp.nlst(current_dir):
+                        # if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
+                        #     break
+                        # print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+                        dif += 6
+                    else:
+                        if os.path.exists(path) is True:
+                            file_name_list.append(filename)
+                            break
                         else:
                             new_file = open(path, "wb")
                             self.ftp.retrbinary("RETR " + filename, new_file.write)
                             file_name_list.append(filename)
                             new_file.close()
                             break
-                    except ftplib.error_perm:
-                        os.remove(path)
 
-                        if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
-                            break
-                        print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
-                        dif += 6
+                    # try:
+                    #     current_dir = "/" + self.data_type
+                    #     self.ftp.cwd(current_dir)
+                    #
+                    #     # path = os.path.join("/home/jhpark/NWP", filename)
+                    #     if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) not in self.time_point):
+                    #         dif += 6
+                    #     elif filename not in self.ftp.nlst(current_dir):
+                    #
+                    #
+                    #
+                    #     else:
+                    #         new_file = open(path, "wb")
+                    #         self.ftp.retrbinary("RETR " + filename, new_file.write)
+                    #         file_name_list.append(filename)
+                    #         new_file.close()
+                    #         break
+                    # except ftplib.error_perm:
+                    #     os.remove(path)
+                    #
+                    #     if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
+                    #         break
+                    #     print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+                    #     dif += 6
 
         self.file_name_list = file_name_list
         return file_name_list
@@ -269,6 +309,8 @@ class NwpFileHandler:
                     nwp_file.close()
                 except BaseException as e:
                     print(e, ": Runtime Error Ocurred with file {}".format(filename))
+
+
             visualizer.print_progress(i, len(file_name_list), 'Value Extract Progress:', 'Complete', 1, 50)
 
         # strings = string.ascii_letters
@@ -303,39 +345,27 @@ class NwpFileHandler:
             col.append(var)
         df = pd.DataFrame(columns=col)
 
+        if comparison_type == "daily":
+            dif = 24
+        elif comparison_type == "hourly":
+            dif = 1
+
         while 1:
             self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
             df_each_prediction = self.extract_variable_values(current_time)
             df = df.append(df_each_prediction, sort=False)
 
-            if comparison_type == "daily":
-                current_time = current_time + datetime.timedelta(hours=24)
-            elif comparison_type == "hourly":
-                current_time = current_time + datetime.timedelta(hours=1)
+            current_time = current_time + datetime.timedelta(hours=dif)
+
             if current_time > end_time:
                 break
-        return df
 
-    # for vpp site
-    # def vpp_real_data_nwp_merge(self, prediction_df, time_point, target_plants=None):
-    #     import convenience_functions
-    #
-    #     time_point = re.sub('[^A-Za-z0-9]+', '', time_point[0])
-    #     site_name_list = convenience_functions.coordinate_to_site_id(target_plants)
-    #
-    #     vpp_info_df = pd.read_excel("vpp_info.xlsx")
-    #
-    #     import df_load
-    #     config_info = {"mongodb_ip_num": "10.0.1.40", "mongodb_port_num": 27017, "executor_memory": "12g",
-    #                    "driver_memory": "12g"}
-    #
-    #     real_df = df_load.real_df_load(config_info, time_point, site_name_list)
-    #     prediction_df = prediction_df.merge(vpp_info_df, how="inner", left_on=["Coordinates"], right_on=["Coordinates"])
-    #
-    #     merged_df = prediction_df.merge(real_df, how="inner", left_on=["FCST_TM", "site_id"], right_on=["FCST_TM", "site"])
-    #     print merged_df
-    #
-    #     return
+            # if comparison_type == "daily":
+            #     current_time = current_time + datetime.timedelta(hours=24)
+            # elif comparison_type == "hourly":
+            #     current_time = current_time + datetime.timedelta(hours=1)
+
+        return df
 
     # functions handle file save/remove
     def save_file_from_ftp_server(self):
@@ -607,6 +637,6 @@ class NwpGridAnalyzer:
             # plt.plot(self.lon_grid[i][:50], self.lat_grid[i][:50], "ro", color="blue")
             # if i > 1:
             #     break
-        # plt.plot(lon_given, lat_given, "ro", color="blue")
+        plt.plot(lon_given, lat_given, "ro", color="blue")
         plt.grid(True)
         plt.show()
