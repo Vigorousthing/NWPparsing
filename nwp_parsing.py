@@ -13,26 +13,30 @@ from data_manipulation import *
 
 class NwpFileHandler:
     def __init__(self, ip, id, pw, connection=True):
-        self.ftp = ftplib.FTP()
 
+        # ftp instance
+        self.ftp = ftplib.FTP()
         if connection is True:
             self.ftp.connect(ip)
             self.ftp.login(id, pw)
 
+        # set for files
         self.data_type = None
         self.fold_type = None
         self.time_interval = None
-        self.time_point = None
         self.horizon_interval = None
+        self.time_point = None
 
-        self.file_name_list = []
-
+        # set for values
         self.nwp_var_list = None
         self.nearest_type = None
         self.given_points_list = None
 
-        self.prediction_model = None
+        # set file names / set nearest prediction
+        self.file_name_list = []
+        self.download_scheduled_list = []
 
+        self.prediction_model = None
         self.local_path = "/home/jhpark/NWP"
 
     def set_for_files(self, data_type, fold_type, time_interval=None, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
@@ -61,6 +65,7 @@ class NwpFileHandler:
 
     def set_file_names(self):
         dir_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
+        model_type_dic = {"RDAPS": "_v070_erea_", "LDAPS": "_v070_erlo_", "SATELLIE": None, "AWS": None, "ASOS": None}
 
         self.file_name_list = []
 
@@ -73,8 +78,6 @@ class NwpFileHandler:
         # UTC correction
         start_time = start_time - datetime.timedelta(hours=9)
         end_time = end_time - datetime.timedelta(hours=9)
-
-        number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
 
         # start / end time alignment for prediction time
         if start_time.hour % 6 != 0:
@@ -97,11 +100,22 @@ class NwpFileHandler:
         current_time = start_time
 
         time_interval_length = len(time_interval)
+
+        if self.data_type == "LDAPS":
+            horizon_multiple = 1
+            number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
+        else:
+            self.horizon_interval[0] = self.horizon_interval[0] + ((3 - self.horizon_interval[0] % 3) % 3)
+            self.horizon_interval[1] = self.horizon_interval[1] - (self.horizon_interval[1] % 3)
+            horizon_multiple = 3
+            number_of_horizon = (self.horizon_interval[1] - self.horizon_interval[0] + 1)
+
         while 1:
             re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(current_time))[:-6]
-            for i in range(number_of_horizon):
-                filename = dir_dic[self.data_type] + "_v070_erlo_" + self.fold_type + "_h" + str(self.horizon_interval[0] + i).zfill(3) + "." + \
-                           re_converted_date_string + str(current_time.hour).zfill(2) + ".gb2"
+            for i in range(int(number_of_horizon/horizon_multiple) + 1):
+                filename = dir_dic[self.data_type] + model_type_dic[self.data_type] + self.fold_type + "_h" + \
+                           str(self.horizon_interval[0] + i*horizon_multiple).zfill(3) + "." + re_converted_date_string + \
+                           str(current_time.hour).zfill(2) + ".gb2"
                 self.file_name_list.append(filename)
 
             current_time = current_time + datetime.timedelta(hours=time_interval[current_index_for_time_interval % time_interval_length])
@@ -110,6 +124,8 @@ class NwpFileHandler:
                 break
 
             current_index_for_time_interval += 1
+
+        self.download_scheduled_list = self.file_name_list
 
     def set_nearest_nwp_prediction_file_from_current_time(self, current_time, horizon_num):
         """
@@ -129,10 +145,14 @@ class NwpFileHandler:
         current_time = current_time - datetime.timedelta(hours=9)
 
         file_name_list = []
+        download_scheduled_list = []
         for i in range(horizon_num):
             "loop for every time horizon"
             # distance from latest prediction time
             dif = current_time.hour % 6
+
+            if self.data_type == "LDAPS" and current_time < datetime.datetime.strptime("2019-05-28 00", "%Y-%m-%d %H") and i > 36:
+                break
 
             while 1:
                 "find nearest file"
@@ -146,7 +166,8 @@ class NwpFileHandler:
                     # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds / 3600
                     hour_dif_from_prediction_time = current_time.hour - nearest_prediction_time.hour
                     day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
-                elif current_time.hour < nearest_prediction_time.hour:
+                else:
+                # elif current_time.hour < nearest_prediction_time.hour:
                     hour_dif_from_prediction_time = current_time.hour + (24 - nearest_prediction_time.hour)
                     day_dif_from_prediction_time = (current_time - nearest_prediction_time).days - 1
 
@@ -183,11 +204,130 @@ class NwpFileHandler:
                             file_name_list.append(filename)
                             break
                         else:
-                            new_file = open(path, "wb")
-                            self.ftp.retrbinary("RETR " + filename, new_file.write)
+                            # new_file = open(path, "wb")
+                            # self.ftp.retrbinary("RETR " + filename, new_file.write)
                             file_name_list.append(filename)
-                            new_file.close()
+                            download_scheduled_list.append(filename)
+                            # new_file.close()
                             break
+
+    def test_function(self, current_time, horizon_num):
+        """
+        this function intends to find latest nwp prediction file towards each time horizon from current time
+        if local file system does not have a such file, then missing value should be interpolated
+        """
+        # number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
+
+        # data type and filename part pair
+        prefix_dic = {"RDAPS": "g120", "LDAPS": "l015", "SATELLIE": None, "AWS": None, "ASOS": None}
+        model_type_dic = {"RDAPS": "_v070_erea_", "LDAPS": "_v070_erlo_", "SATELLIE": None, "AWS": None,
+                          "ASOS": None}
+
+        # length of time horizon
+        horizon_num = horizon_num + 1
+
+        # from korean time to UTC time(NWP notation)
+        current_time = current_time - datetime.timedelta(hours=9)
+
+        file_name_list = []
+        download_scheduled_list = []
+
+        for i in range(horizon_num):
+            # distance from latest prediction time
+            dif = current_time.hour % 6
+
+            # exception by KMA model change
+            if self.data_type == "LDAPS" and current_time < datetime.datetime.strptime("2019-05-28 00", "%Y-%m-%d %H") and i > 36:
+                break
+
+            "find nearest file"
+            nearest_prediction_time = current_time - datetime.timedelta(hours=dif)
+            re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(nearest_prediction_time))[:8]
+
+            # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds/3600
+            # day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+
+            if current_time.hour >= nearest_prediction_time.hour:
+                # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds / 3600
+                hour_dif_from_prediction_time = current_time.hour - nearest_prediction_time.hour
+                day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+            else:
+                # elif current_time.hour < nearest_prediction_time.hour:
+                hour_dif_from_prediction_time = current_time.hour + (
+                            24 - nearest_prediction_time.hour)
+                day_dif_from_prediction_time = (current_time - nearest_prediction_time).days - 1
+
+            filename = prefix_dic[self.data_type] + model_type_dic[
+                self.data_type] + self.fold_type + "_h" + \
+                       str(int(
+                           hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i)).zfill(
+                           3) + \
+                       "." + re_converted_date_string + str(nearest_prediction_time.hour).zfill(
+                2) + ".gb2"
+            path = os.path.join(self.local_path, filename)
+
+    def test_download_function(self):
+        current_dir = "/" + self.data_type
+        self.ftp.cwd(current_dir)
+
+        visualizer = Visualizer()
+        for num, filename in enumerate(self.download_scheduled_list):
+            if os.path.exists(self.local_path + "/" + filename):
+                print(filename + " already exists in local pc")
+                continue
+            else:
+                path = os.path.join(self.local_path, filename)
+                try:
+                    new_file = open(path, "wb")
+                    self.ftp.retrbinary("RETR " + filename, new_file.write)
+                    new_file.close()
+                except ftplib.error_perm:
+                    os.remove(path)
+                    print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+
+
+
+
+
+        # if os.path.exists(path) and (
+        #         str(nearest_prediction_time.hour).zfill(2) in self.time_point):
+        #     file_name_list.append(filename)
+        #     break
+        # elif day_dif_from_prediction_time > 2:
+        #     if self.data_type == "LDAPS":
+        #         file_name_list.append(None)
+        #         print("no matched file in local and ftp server for" + " horizon " + str(i))
+        #         break
+        #     elif self.data_type == "RDAPS" and day_dif_from_prediction_time > 4:
+        #         file_name_list.append(None)
+        #         print("no matched file in local and ftp server for" + " horizon " + str(i))
+        #         break
+        # else:
+        #     current_dir = "/" + self.data_type
+        #     self.ftp.cwd(current_dir)
+        #
+        #     if (os.path.exists(path) or (filename in self.ftp.nlst(current_dir))) and (
+        #             str(nearest_prediction_time.hour).zfill(2) not in self.time_point):
+        #         dif += 6
+        #     elif not os.path.exists(path) and filename not in self.ftp.nlst(current_dir):
+        #         # if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
+        #         #     break
+        #         # print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+        #         dif += 6
+        #     else:
+        #         if os.path.exists(path) is True:
+        #             file_name_list.append(filename)
+        #             break
+        #         else:
+        #             # new_file = open(path, "wb")
+        #             # self.ftp.retrbinary("RETR " + filename, new_file.write)
+        #             file_name_list.append(filename)
+        #             download_scheduled_list.append(filename)
+        #             # new_file.close()
+        #             break
+
+
+
 
                     # try:
                     #     current_dir = "/" + self.data_type
@@ -215,6 +355,8 @@ class NwpFileHandler:
                     #     dif += 6
 
         self.file_name_list = file_name_list
+        self.download_scheduled_list.append(download_scheduled_list)
+
         return file_name_list
 
     # functions handle main jobs
@@ -236,13 +378,19 @@ class NwpFileHandler:
         temp_file.close()
 
         # make var index dic
-        nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
+        if self.data_type == "LDAPS":
+            nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
+            info_file_name = "LDAPS_variables_index_name.xlsx"
+        else:
+            nwp_var_info = pd.read_excel("RDAPS_variables_index_name.xlsx")
+            info_file_name = "RDAPS_variables_index_name.xlsx"
+        # nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
         nwp_var_index_dic = nwp_var_info.set_index("var_abbrev")["index"]
 
         # make column list
         col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
         if self.nwp_var_list == "all":
-            self.nwp_var_list = pd.read_excel("LDAPS_variables_index_name.xlsx").set_index("index")["var_abbrev"].to_list()
+            self.nwp_var_list = pd.read_excel(info_file_name).set_index("index")["var_abbrev"].to_list()
         for var in self.nwp_var_list:
             col.append(var)
 
@@ -300,7 +448,7 @@ class NwpFileHandler:
                                 # 1) load grid value data
                                 var_grid_values = nwp_file[index].values
                                 # 2) make dis_index_dic for n-nearest points
-                                nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(4, given_point[0], given_point[1])
+                                nearest_point_dis_index_dic, _ = nwp_grid_analyzer.nearest_n_grid_point(given_point[0], given_point[1], 4)
                                 # 3) interpolate values from n-nearest points
                                 value = nwp_grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
                             row.append(value)
@@ -350,12 +498,29 @@ class NwpFileHandler:
         elif comparison_type == "hourly":
             dif = 1
 
+        visualizer = Visualizer()
+        total_num = 0
+        while 1:
+            self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
+            total_num += len(self.file_name_list)
+            current_time = current_time + datetime.timedelta(hours=dif)
+            if current_time > end_time:
+                break
+
+        # download process
+        self.download_scheduled_list = list(set.union(*map(set, self.download_scheduled_list)))
+        self.save_file_from_ftp_server()
+
+        i = 0
         while 1:
             self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
             df_each_prediction = self.extract_variable_values(current_time)
             df = df.append(df_each_prediction, sort=False)
 
             current_time = current_time + datetime.timedelta(hours=dif)
+
+            i += 1
+            visualizer.print_progress(i, total_num, 'Value Extract Progress:', 'Complete', 1, 50)
 
             if current_time > end_time:
                 break
@@ -367,26 +532,51 @@ class NwpFileHandler:
 
         return df
 
+    def make_real_time_prediction_data(self, horizon_num, comparison_type):
+
+        pass
+
     # functions handle file save/remove
     def save_file_from_ftp_server(self):
         current_dir = "/" + self.data_type
         self.ftp.cwd(current_dir)
 
         visualizer = Visualizer()
-        for num, filename in enumerate(self.file_name_list):
-            try:
+        for num, filename in enumerate(self.download_scheduled_list):
+            if os.path.exists(self.local_path + "/" + filename):
+                print(filename + " already exists in local pc")
+                continue
+            else:
                 path = os.path.join(self.local_path, filename)
-                if os.path.exists(path):
-                    print(filename + " already exists in local pc")
-                    continue
-                new_file = open(path, "wb")
-                self.ftp.retrbinary("RETR " + filename, new_file.write)
-                new_file.close()
-            except ftplib.error_perm:
-                os.remove(path)
-                print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+                try:
+                    new_file = open(path, "wb")
+                    self.ftp.retrbinary("RETR " + filename, new_file.write)
+                    new_file.close()
+                except ftplib.error_perm:
+                    os.remove(path)
+                    print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
 
-            visualizer.print_progress(num, len(self.file_name_list), 'Download Progress:', 'Complete', 1, 50)
+
+            # elif current_dir + "/" + filename in self.ftp.nlst(current_dir):
+            #     new_file = open(self.local_path + "/" + filename, "wb")
+            #     self.ftp.retrbinary("RETR " + filename, new_file.write)
+            #     new_file.close()
+            # else:
+            #     print("cannot download " + filename + " because the file does not exists in ftp server")
+
+            # try:
+            #     path = os.path.join(self.local_path, filename)
+            #     if os.path.exists(path):
+            #         print(filename + " already exists in local pc")
+            #         continue
+            #     new_file = open(path, "wb")
+            #     self.ftp.retrbinary("RETR " + filename, new_file.write)
+            #     new_file.close()
+            # except ftplib.error_perm:
+            #     os.remove(path)
+            #     print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
+
+            visualizer.print_progress(num, len(self.download_scheduled_list), 'Download Progress:', 'Complete', 1, 50)
 
     def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
         try:
@@ -485,6 +675,72 @@ class NwpGridAnalyzer:
 
         return numerator/denominator
 
+    def around_four_grid_point(self, lat_given, lon_given):
+        lat_total_num = len(self.lat_grid)
+        lon_total_num = len(self.lon_grid[0])
+
+        # lat search
+        index = lat_total_num // 2
+        upper_bound = lat_total_num - 1
+        lower_bound = 0
+
+        # lon search function
+        def search_lon_based_on_lat(index):
+            left_bound = 0
+            right_bound = lon_total_num - 1
+            comparison_point = lon_total_num // 2
+
+            while 1:
+                if lon_given <= self.lon_grid[index][comparison_point]:
+                    right_bound = comparison_point
+                    comparison_point = int((left_bound + right_bound) // 2)
+                elif lon_given > self.lon_grid[index][comparison_point]:
+                    left_bound = comparison_point
+                    comparison_point = int((left_bound + right_bound) // 2)
+                if abs(left_bound - right_bound) == 1:
+                    break
+            return left_bound, right_bound
+
+        # lat search
+        while 1:
+            above_of_given_points_condition = 0
+            lat_grid = self.lat_grid[index]
+            for i, lat_points in enumerate(lat_grid):
+                if lat_given <= lat_points:
+                    above_of_given_points_condition += 1
+                    left_bound, right_bound = search_lon_based_on_lat(index)
+                    left_lat, right_lat = lat_grid[left_bound], lat_grid[right_bound]
+
+                    if left_lat <= lat_given and right_lat <= lat_given:
+                        lower_bound = index
+                        index = (upper_bound + lower_bound) // 2
+                        break
+                    elif left_lat >= lat_given and right_lat <= lat_given:
+                        upper_bound = index
+                        index = (upper_bound + lower_bound) // 2
+                        break
+                    elif left_lat <= lat_given and right_lat >= lat_given:
+                        lower_bound = index
+                        index = (upper_bound + lower_bound) // 2
+                        break
+                    else:
+                        upper_bound = index
+                        index = (upper_bound + lower_bound) // 2
+                        break
+
+            if above_of_given_points_condition == 0:
+                # left_bound, right_bound = search_lon_based_on_lat(index)
+                # left_lat, right_lat = lat_grid[left_bound], lat_grid[right_bound]
+                lower_bound = index
+                index = (upper_bound + lower_bound)//2
+            if upper_bound - lower_bound == 1:
+                break
+
+        # lon search
+        left_bound, right_bound = search_lon_based_on_lat(lower_bound)
+
+        return upper_bound, lower_bound, left_bound, right_bound
+
     def nearest_point_index(self, lat_given, lon_given):
         stn_point = (lat_given, lon_given)
 
@@ -503,7 +759,7 @@ class NwpGridAnalyzer:
         return nearest_point_index
 
     # exception case should be prepared
-    def nearest_n_grid_point(self, objective_num, lat_given, lon_given):
+    def nearest_n_grid_point(self, lat_given, lon_given, objective_num):
         if int(sqrt(objective_num)) % 2 == 0:
             search_grid_num = int(sqrt(objective_num)) + 2
         else:
@@ -539,74 +795,11 @@ class NwpGridAnalyzer:
 
         return distance_index_dic, nearest_point_index_list
 
-    def around_four_grid_point(self, lat_given, lon_given):
-        lat_total_num = len(self.lat_grid)
-        lon_total_num = len(self.lon_grid[0])
+    def plot_nearest_n_point(self, lat_given, lon_given, objective_num):
+        for i in range(len(self.lon_grid)):
+            plt.plot(self.lon_grid[i], self.lat_grid[i], "ro", color="green", markersize=0.5)
 
-        # lat search
-        index = lat_total_num // 2
-        upper_bound = lat_total_num - 1
-        lower_bound = 0
-
-        # lon search function
-        def search_lon_based_on_lat(index):
-            left_bound = 0
-            right_bound = lon_total_num - 1
-            comparison_point = lon_total_num // 2
-
-            while 1:
-                if lon_given <= self.lon_grid[index][comparison_point]:
-                    right_bound = comparison_point
-                    comparison_point = int((left_bound + right_bound) // 2)
-                elif lon_given > self.lon_grid[index][comparison_point]:
-                    left_bound = comparison_point
-                    comparison_point = int((left_bound + right_bound) // 2)
-                if abs(left_bound - right_bound) == 1:
-                    break
-            return left_bound, right_bound
-
-        # lon search
-        while 1:
-            above_of_given_points_condition = 0
-            lat_grid = self.lat_grid[index]
-            for i, lat_points in enumerate(lat_grid):
-                if lat_given <= lat_points:
-                    above_of_given_points_condition += 1
-                    left_bound, right_bound = search_lon_based_on_lat(index)
-                    left_lat, right_lat = lat_grid[left_bound], lat_grid[right_bound]
-
-                    if left_lat <= lat_given and right_lat <= lat_given:
-                        lower_bound = index
-                        index = (upper_bound + lower_bound) // 2
-                        break
-                    elif left_lat >= lat_given and right_lat <= lat_given:
-                        upper_bound = index
-                        index = (upper_bound + lower_bound) // 2
-                        break
-                    elif left_lat <= lat_given and right_lat >= lat_given:
-                        lower_bound = index
-                        index = (upper_bound + lower_bound) // 2
-                        break
-                    else:
-                        upper_bound = index
-                        index = (upper_bound + lower_bound) // 2
-                        break
-
-            if above_of_given_points_condition == 0:
-                left_bound, right_bound = search_lon_based_on_lat(index)
-                # left_lat, right_lat = lat_grid[left_bound], lat_grid[right_bound]
-                lower_bound = index
-                index = (upper_bound + lower_bound)//2
-            if upper_bound - lower_bound == 1:
-                break
-
-        # lon search
-        left_bound, right_bound = search_lon_based_on_lat(lower_bound)
-
-        return upper_bound, lower_bound, left_bound, right_bound
-
-    def plot_nearest_n_point(self, nearest_n_grid_point, lat_given, lon_given):
-        _, nearest_n_grid_point = nearest_n_grid_point
+        _, nearest_n_grid_point = self.nearest_n_grid_point(lat_given, lon_given, objective_num)
         for points in nearest_n_grid_point:
             lat = self.lat_grid[int(points[0])][int(points[1])]
             lon = self.lon_grid[int(points[0])][int(points[1])]
@@ -615,8 +808,11 @@ class NwpGridAnalyzer:
         plt.plot(lon_given, lat_given, "ro", color="blue")
         plt.show()
 
-    def plot_nearest_point(self, around_four_grid_point, lat_given, lon_given):
-        upper_bound, lower_bound, left_bound, right_bound = around_four_grid_point
+    def plot_nearest_point(self, lat_given, lon_given):
+        for i in range(len(self.lon_grid)):
+            plt.plot(self.lon_grid[i], self.lat_grid[i], "ro", color="green", markersize=0.5)
+
+        upper_bound, lower_bound, left_bound, right_bound = self.around_four_grid_point(lat_given, lon_given)
         left_upper = [self.lon_grid[upper_bound][left_bound], self.lat_grid[upper_bound][left_bound]]
         left_lower = [self.lon_grid[lower_bound][left_bound], self.lat_grid[lower_bound][left_bound]]
         right_upper = [self.lon_grid[upper_bound][right_bound], self.lat_grid[upper_bound][right_bound]]
@@ -633,7 +829,7 @@ class NwpGridAnalyzer:
 
     def plot_base_point(self, lat_given, lon_given):
         for i in range(len(self.lon_grid)):
-            plt.plot(self.lon_grid[i], self.lat_grid[i], "ro", color="red", markersize=0.1)
+            plt.plot(self.lon_grid[i], self.lat_grid[i], "ro", color="red", markersize=0.3)
             # plt.plot(self.lon_grid[i][:50], self.lat_grid[i][:50], "ro", color="blue")
             # if i > 1:
             #     break
