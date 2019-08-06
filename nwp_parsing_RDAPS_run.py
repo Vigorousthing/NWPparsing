@@ -18,6 +18,7 @@ time_point = ["00", "09", "12", "18"]
 # var_list = ["NDNSW", "INSWT", "OUSWT", "CUSWT", "CDSWS", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "NDLWO", "OULWT", "CULWT", "DLWS", "CDLWS"]
 var_list = ["TDSWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
 
+experimental_see = 1
 nearest_type = 1
 
 # four garage coordinates
@@ -37,7 +38,4 @@ ftp_accessor.save_file_from_ftp_server()
 df = ftp_accessor.extract_variable_values()
 
 # df.to_excel("/home/jhpark/experiment_files/forRDAPStraining0601to0610.xlsx")
-# df.to_excel("/home/jhpark/experiment_files/forRDAPStraining0611to0620.xlsx")
-df.to_excel("/home/jhpark/experiment_files/forRDAPStraining0621to0631.xlsx")
-
-# ftp_accessor.save_target_file("RDAPS", "g120_v070_erea_unis_h087.2019072018.gb2")
+commit_see = 1
