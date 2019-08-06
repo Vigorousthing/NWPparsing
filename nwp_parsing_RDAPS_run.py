@@ -18,7 +18,6 @@ time_point = ["00", "09", "12", "18"]
 # var_list = ["NDNSW", "INSWT", "OUSWT", "CUSWT", "CDSWS", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "NDLWO", "OULWT", "CULWT", "DLWS", "CDLWS"]
 var_list = ["TDSWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
 
-experimental_see = 1
 nearest_type = 1
 
 # four garage coordinates
@@ -30,13 +29,14 @@ training_point = [(34.576936, 126.436539), (34.55375, 126.56907), (34.549625, 12
 
 # current_time = datetime.datetime.strptime("2019-05-08 10", "%Y-%m-%d %H")
 
-ftp_accessor = NwpFileHandler(ip, id, pw, True)
-ftp_accessor.set_for_files(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
-ftp_accessor.set_for_values(var_list, nearest_type, training_point)
-ftp_accessor.set_file_names()
-ftp_accessor.save_file_from_ftp_server()
-df = ftp_accessor.extract_variable_values()
+ftp_accessor1 = NwpFileHandler(ip, id, pw, True)
+ftp_accessor1.set_for_files(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
+ftp_accessor1.set_for_values(var_list, nearest_type, training_point)
+ftp_accessor1.set_file_names()
+ftp_accessor1.save_file_from_ftp_server()
+df23 = ftp_accessor1.extract_variable_values()
 
+print("chchchchchc")
 print("exp1 check")
 # df.to_excel("/home/jhpark/experiment_files/forRDAPStraining0601to0610.xlsx")
 commit_see = 1
