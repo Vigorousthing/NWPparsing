@@ -1,5 +1,6 @@
 import ftplib
 import pygrib
+import time
 import datetime
 from math import *
 from haversine import *
@@ -96,10 +97,7 @@ class NwpFileHandler:
                 time_interval.append(int(self.time_point[i+1]) - int(val))
 
         current_index_for_time_interval = self.time_point.index(str(start_time.hour).zfill(2))
-
         current_time = start_time
-
-        time_interval_length = len(time_interval)
 
         if self.data_type == "LDAPS":
             horizon_multiple = 1
@@ -118,7 +116,7 @@ class NwpFileHandler:
                            str(current_time.hour).zfill(2) + ".gb2"
                 self.file_name_list.append(filename)
 
-            current_time = current_time + datetime.timedelta(hours=time_interval[current_index_for_time_interval % time_interval_length])
+            current_time = current_time + datetime.timedelta(hours=time_interval[current_index_for_time_interval % len(time_interval)])
 
             if current_time > end_time:
                 break
@@ -127,90 +125,7 @@ class NwpFileHandler:
 
         self.download_scheduled_list = self.file_name_list
 
-    def set_nearest_nwp_prediction_file_from_current_time(self, current_time, horizon_num):
-        """
-        this function intends to find latest nwp prediction file towards each time horizon from current time
-        if local file system does not have a such file, then missing value should be interpolated
-        """
-        # number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
-
-        # length of time horizon
-        horizon_num = horizon_num + 1
-
-        # from korean time to UTC time(NWP notation)
-        current_time = current_time - datetime.timedelta(hours=9)
-
-        file_name_list = []
-        download_scheduled_list = []
-        for i in range(horizon_num):
-            "loop for every time horizon"
-            # distance from latest prediction time
-            dif = current_time.hour % 6
-
-            if self.data_type == "LDAPS" and current_time < datetime.datetime.strptime("2019-05-28 00", "%Y-%m-%d %H") and i > 36:
-                break
-
-            while 1:
-                "find nearest file"
-                nearest_prediction_time = current_time - datetime.timedelta(hours=dif)
-                re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(nearest_prediction_time))[:8]
-
-                # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds/3600
-                # day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
-
-                if current_time.hour >= nearest_prediction_time.hour:
-                    # hour_dif_from_prediction_time = (current_time - nearest_prediction_time).seconds / 3600
-                    hour_dif_from_prediction_time = current_time.hour - nearest_prediction_time.hour
-                    day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
-                else:
-                # elif current_time.hour < nearest_prediction_time.hour:
-                    hour_dif_from_prediction_time = current_time.hour + (24 - nearest_prediction_time.hour)
-                    day_dif_from_prediction_time = (current_time - nearest_prediction_time).days - 1
-
-                filename = self.prefix_dic[self.data_type] + self.fold_type + "_h" + \
-                           str(int(hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i)).zfill(3) + \
-                           "." + re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
-                path = os.path.join(self.local_path, filename)
-
-                if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) in self.time_point):
-                    file_name_list.append(filename)
-                    break
-                elif day_dif_from_prediction_time > 2:
-                    if self.data_type == "LDAPS":
-                        file_name_list.append(None)
-                        print("no matched file in local and ftp server for" + " horizon " + str(i))
-                        break
-                    elif self.data_type == "RDAPS" and day_dif_from_prediction_time > 4:
-                        file_name_list.append(None)
-                        print("no matched file in local and ftp server for" + " horizon " + str(i))
-                        break
-                else:
-                    current_dir = "/" + self.data_type
-                    self.ftp.cwd(current_dir)
-
-                    if str(nearest_prediction_time.hour).zfill(2) not in self.time_point:
-                        dif += 6
-                    elif not os.path.exists(path) and filename not in self.ftp.nlst(current_dir):
-                        # if hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i > 36:
-                        #     break
-                        # print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
-                        dif += 6
-                    else:
-                        if os.path.exists(path) is True:
-                            file_name_list.append(filename)
-                            break
-                        else:
-                            # new_file = open(path, "wb")
-                            # self.ftp.retrbinary("RETR " + filename, new_file.write)
-                            file_name_list.append(filename)
-                            download_scheduled_list.append(filename)
-                            # new_file.close()
-                            break
-
-        self.file_name_list = file_name_list
-        return file_name_list
-
-    def test_function(self, current_time, horizon_num):
+    def set_nearest_nwp_prediction_file_names(self, current_time, horizon_num):
         """
         this function intends to find latest nwp prediction file towards each time horizon from current time
         if local file system does not have a such file, then missing value should be interpolated
@@ -278,7 +193,7 @@ class NwpFileHandler:
 
         return file_name_list
 
-    def test_download_function(self, real_time_prediction=False):
+    def save_file_from_ftp_server(self, real_time_prediction=False):
         current_dir = "/" + self.data_type
         self.ftp.cwd(current_dir)
 
@@ -327,7 +242,7 @@ class NwpFileHandler:
                             except:
                                 os.remove(new_path)
 
-            visualizer.print_progress(num, len(self.download_scheduled_list), 'Value Extract Progress:', 'Complete', 1, 50)
+            visualizer.print_progress(num, len(self.download_scheduled_list), 'Download Progress:', 'Complete', 1, 50)
 
     # functions handle main jobs
     def extract_variable_values(self, current_time=None):
@@ -428,7 +343,6 @@ class NwpFileHandler:
                 except BaseException as e:
                     print(e, ": Runtime Error Ocurred with file {}".format(filename))
 
-
             visualizer.print_progress(i, len(file_name_list), 'Value Extract Progress:', 'Complete', 1, 50)
 
         # strings = string.ascii_letters
@@ -473,7 +387,7 @@ class NwpFileHandler:
         visualizer = Visualizer()
         total_num = 0
         while 1:
-            self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
+            self.set_nearest_nwp_prediction_file_names(current_time, horizon_num)
             total_num += len(self.file_name_list)
             current_time = current_time + datetime.timedelta(hours=dif)
             if current_time > end_time:
@@ -486,7 +400,7 @@ class NwpFileHandler:
 
         i = 0
         while 1:
-            self.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num)
+            self.set_nearest_nwp_prediction_file_names(current_time, horizon_num)
             df_each_prediction = self.extract_variable_values(current_time)
             df = df.append(df_each_prediction, sort=False)
 
@@ -503,48 +417,6 @@ class NwpFileHandler:
     def make_real_time_prediction_data(self, horizon_num, comparison_type):
 
         pass
-
-    # functions handle file save/remove
-    def save_file_from_ftp_server(self):
-        current_dir = "/" + self.data_type
-        self.ftp.cwd(current_dir)
-
-        visualizer = Visualizer()
-        for num, filename in enumerate(self.download_scheduled_list):
-            if os.path.exists(self.local_path + "/" + filename):
-                print(filename + " already exists in local pc")
-                continue
-            else:
-                path = os.path.join(self.local_path, filename)
-                try:
-                    new_file = open(path, "wb")
-                    self.ftp.retrbinary("RETR " + filename, new_file.write)
-                    new_file.close()
-                except ftplib.error_perm:
-                    os.remove(path)
-                    print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
-
-
-            # elif current_dir + "/" + filename in self.ftp.nlst(current_dir):
-            #     new_file = open(self.local_path + "/" + filename, "wb")
-            #     self.ftp.retrbinary("RETR " + filename, new_file.write)
-            #     new_file.close()
-            # else:
-            #     print("cannot download " + filename + " because the file does not exists in ftp server")
-
-            # try:
-            #     path = os.path.join(self.local_path, filename)
-            #     if os.path.exists(path):
-            #         print(filename + " already exists in local pc")
-            #         continue
-            #     new_file = open(path, "wb")
-            #     self.ftp.retrbinary("RETR " + filename, new_file.write)
-            #     new_file.close()
-            # except ftplib.error_perm:
-            #     os.remove(path)
-            #     print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
-
-            visualizer.print_progress(num, len(self.download_scheduled_list), 'Download Progress:', 'Complete', 1, 50)
 
     def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
         try:
