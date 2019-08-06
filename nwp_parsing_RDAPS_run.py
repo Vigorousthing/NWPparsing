@@ -37,3 +37,4 @@ ftp_accessor.save_file_from_ftp_server()
 df = ftp_accessor.extract_variable_values()
 
 # df.to_excel("/home/jhpark/experiment_files/forRDAPStraining0601to0610.xlsx")
+print("exp2")
