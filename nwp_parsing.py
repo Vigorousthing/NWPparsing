@@ -10,6 +10,7 @@ import string
 import random
 from Load_data import *
 from data_manipulation import *
+import CONSTANT
 
 
 class NwpFileHandler:
@@ -42,8 +43,8 @@ class NwpFileHandler:
         self.local_path = "/home/jhpark/NWP"
         self.prefix_dic = {"RDAPS": "g120_v070_erea_", "LDAPS": "l015_v070_erlo_", "SATELLIE": None, "AWS": None, "ASOS": None}
 
-
-    def set_for_files(self, data_type, fold_type, time_interval=None, horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
+    def set_for_files(self, data_type, fold_type, time_interval=None, horizon_interval=(0, 36), time_point=("00", "06", "12", "18")):
+        """all parameters of this function are contained in nwp filename"""
         self.data_type = data_type
         self.fold_type = fold_type
         self.time_interval = time_interval
@@ -51,21 +52,10 @@ class NwpFileHandler:
         self.time_point = time_point
 
     def set_for_values(self, nwp_var_list, nearest_type, given_points_list):
+        """value extract behavior depends on this function's parameters"""
         self.nwp_var_list = nwp_var_list
         self.nearest_type = nearest_type
         self.given_points_list = given_points_list
-
-    # def set_fixed_variables(self, data_type, fold_type, time_interval, nwp_var_list, nearest_type, given_points_list,
-    # horizon_interval=[0, 36], time_point=["00", "06", "12", "18"]):
-    #     self.data_type = data_type
-    #     self.fold_type = fold_type
-    #     self.time_interval = time_interval
-    #     self.horizon_interval = horizon_interval
-    #     self.time_point = time_point
-    #
-    #     self.nwp_var_list = nwp_var_list
-    #     self.nearest_type = nearest_type
-    #     self.given_points_list = given_points_list
 
     def set_file_names(self):
         self.file_name_list = []
@@ -131,20 +121,23 @@ class NwpFileHandler:
         if local file system does not have a such file, then missing value should be interpolated
         """
         # number_of_horizon = self.horizon_interval[1] - self.horizon_interval[0] + 1
-
-        # length of time horizon
-        horizon_num = horizon_num + 1
+        horizon_multiple = 1
+        if self.data_type == "LDAPS":
+            horizon_multiple = 1
+        elif self.data_type == "RDAPS":
+            horizon_multiple = 3
 
         # from korean time to UTC time(NWP notation)
         current_time = current_time - datetime.timedelta(hours=9)
 
         file_name_list = []
 
-        for i in range(horizon_num):
+        for i in range(int(horizon_num/horizon_multiple + 1)):
             "loop for every time horizon"
             # distance from latest prediction time
             dif = current_time.hour % 6
 
+            # LDAPS's time horizon is expanded to 48h from 36h after 2019-05-28 00
             if self.data_type == "LDAPS" and current_time < datetime.datetime.strptime("2019-05-28 00", "%Y-%m-%d %H") and i > 36:
                 break
 
@@ -153,34 +146,34 @@ class NwpFileHandler:
                 nearest_prediction_time = current_time - datetime.timedelta(hours=dif)
                 re_converted_date_string = re.sub('[^A-Za-z0-9]+', '', str(nearest_prediction_time))[:8]
 
+                # hour difference between current time and nearest prediction time
                 if current_time.hour >= nearest_prediction_time.hour:
                     hour_dif_from_prediction_time = current_time.hour - nearest_prediction_time.hour
-                    # day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+                    day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+                    hour_converted_time_dif = hour_dif_from_prediction_time + day_dif_from_prediction_time * 24
                 else:
                     hour_dif_from_prediction_time = current_time.hour + (24 - nearest_prediction_time.hour)
-                    # day_dif_from_prediction_time = (current_time - nearest_prediction_time).days - 1
+                    day_dif_from_prediction_time = (current_time - nearest_prediction_time).days
+                    hour_converted_time_dif = hour_dif_from_prediction_time + day_dif_from_prediction_time * 24
 
-                # filename = self.prefix_dic[self.data_type] + self.fold_type + "_h" + \
-                #            str(int(hour_dif_from_prediction_time + day_dif_from_prediction_time * 24 + i)).zfill(3) + \
-                #            "." + re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
-                filename = self.prefix_dic[self.data_type] + self.fold_type + "_h" + \
-                           str(int(hour_dif_from_prediction_time + i)).zfill(3) + \
-                           "." + re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
-                path = os.path.join(self.local_path, filename)
-
-                if os.path.exists(path) and (str(nearest_prediction_time.hour).zfill(2) in self.time_point):
-                    file_name_list.append(filename)
+                # if maximum horizon is reached, break iteration and skip relevant horizon
+                if self.data_type == "LDAPS" and hour_converted_time_dif + i > 48:
+                    file_name_list.append(None)
                     break
-                # elif day_dif_from_prediction_time > 2:
-                #     if self.data_type == "LDAPS":
-                #         file_name_list.append(None)
-                #         print("no matched file in local and ftp server for" + " horizon " + str(i))
-                #         break
-                #     elif self.data_type == "RDAPS" and day_dif_from_prediction_time > 4:
-                #         file_name_list.append(None)
-                #         print("no matched file in local and ftp server for" + " horizon " + str(i))
-                #         break
-                elif str(nearest_prediction_time.hour).zfill(2) not in self.time_point:
+                elif self.data_type == "RDAPS" and hour_converted_time_dif + i > 87:
+                    file_name_list.append(None)
+                    break
+
+                # how fcst_tm is far from nearest prediction time? RDAPS horizon should be aligned to multiple of 3
+                horizon_index = int(hour_converted_time_dif + i * horizon_multiple)
+                if self.data_type == "RDAPS":
+                    horizon_index = horizon_index - horizon_index % 3
+
+                filename = self.prefix_dic[self.data_type] + self.fold_type + "_h" + \
+                           str(horizon_index).zfill(3) + \
+                           "." + re_converted_date_string + str(nearest_prediction_time.hour).zfill(2) + ".gb2"
+
+                if str(nearest_prediction_time.hour).zfill(2) not in self.time_point:
                     dif += 6
                 else:
                     file_name_list.append(filename)
@@ -193,6 +186,87 @@ class NwpFileHandler:
 
         return file_name_list
 
+    def make_training_data(self):
+        self.set_file_names()
+        self.save_file_from_ftp_server()
+        df = self.extract_variable_values()
+        return df
+
+    def make_historical_prediction_data(self, horizon_num, comparison_type):
+        self.file_name_list = []
+
+        start_time = self.time_interval[0]
+        end_time = self.time_interval[1]
+
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H")
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H")
+
+        current_time = start_time
+
+        # length of time horizon
+        horizon_num = horizon_num + 1
+
+        # initialize dataframe
+        col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
+        if self.nwp_var_list == "all" and self.data_type == "LDAPS":
+            self.nwp_var_list = pd.read_excel(CONSTANT.setting_file_path + CONSTANT.ldaps_variable_index_file_name).set_index("index")["var_abbrev"].to_list()
+        elif self.nwp_var_list == "all" and self.data_type == "LDAPS":
+            self.nwp_var_list = pd.read_excel(CONSTANT.setting_file_path + CONSTANT.rdaps_variable_index_file_name).set_index("index")["var_abbrev"].to_list()
+
+        for var in self.nwp_var_list:
+            col.append(var)
+        df = pd.DataFrame(columns=col)
+
+        dif = 0
+        if comparison_type == "daily":
+            dif = 24
+        elif comparison_type == "hourly":
+            dif = 1
+
+        visualizer = Visualizer()
+        total_num = 0
+
+        while 1:
+            self.set_nearest_nwp_prediction_file_names(current_time, horizon_num)
+            total_num += len(self.file_name_list)
+            current_time = current_time + datetime.timedelta(hours=dif)
+            if current_time > end_time:
+                break
+
+        self.save_file_from_ftp_server()
+        # print(self.download_scheduled_list)
+
+        # download process
+        # self.download_scheduled_list = list(set.union(*map(set, self.download_scheduled_list)))
+        self.already_downloaded = True
+
+        i = 0
+        current_time = start_time
+        while 1:
+            self.set_nearest_nwp_prediction_file_names(current_time, horizon_num)
+            df_each_prediction = self.extract_variable_values(current_time)
+            df = df.append(df_each_prediction, sort=False)
+
+            current_time = current_time + datetime.timedelta(hours=dif)
+
+            i += 1
+            visualizer.print_progress(i, total_num, 'Value Extract Progress:', 'Complete', 1, 50)
+
+            if current_time > end_time:
+                break
+
+        return df
+
+    def make_real_time_prediction_data(self, current_time=datetime.datetime.now()):
+        if type(current_time) == str:
+            current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
+        else:
+            pass
+        self.set_nearest_nwp_prediction_file_names(current_time, 87)
+        self.save_file_from_ftp_server(real_time_prediction=True)
+        df = self.extract_variable_values()
+        return df
+
     def save_file_from_ftp_server(self, real_time_prediction=False):
         current_dir = "/" + self.data_type
         self.ftp.cwd(current_dir)
@@ -200,8 +274,10 @@ class NwpFileHandler:
         visualizer = Visualizer()
 
         for num, filename in enumerate(self.download_scheduled_list):
-            if os.path.exists(self.local_path + "/" + filename):
-                print(filename + " already exists in local pc")
+            if filename is None:
+                continue
+            elif os.path.exists(self.local_path + "/" + filename):
+                print(CONSTANT.already_exists_text.format(filename))
                 continue
             else:
                 path = os.path.join(self.local_path, filename)
@@ -231,12 +307,15 @@ class NwpFileHandler:
                                 temp_filename_list.append(filename)
 
                         for temp_filename in temp_filename_list:
+                            new_path = None
                             try:
                                 new_path = os.path.join(self.local_path, temp_filename)
-                                new_file = open(new_file, "wb")
+                                new_file = open(new_path, "wb")
                                 self.ftp.retrbinary("RETR " + temp_filename, new_file.write)
                                 new_file.close()
 
+                                # this line can be applied when real time prediction is made
+                                # When it's real time, download_scheduled_list is equal to file_name_list
                                 self.file_name_list[num] = temp_filename
                                 break
                             except:
@@ -244,7 +323,30 @@ class NwpFileHandler:
 
             visualizer.print_progress(num, len(self.download_scheduled_list), 'Download Progress:', 'Complete', 1, 50)
 
-    # functions handle main jobs
+    def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
+        path = None
+        try:
+            current_dir = "/" + folder_name
+            self.ftp.cwd(current_dir)
+
+            path = os.path.join(local_path, filename)
+            if os.path.exists(path):
+                print(CONSTANT.already_exists_text.format(filename))
+            new_file = open(path, "wb")
+            self.ftp.retrbinary("RETR " + filename, new_file.write)
+            new_file.close()
+        except ftplib.error_perm:
+            os.remove(path)
+            print(CONSTANT.download_exception_text.format(filename))
+
+    def remove_from_local_pc(self):
+        for filename in self.file_name_list:
+            path = os.path.join(self.local_path, filename)
+            if os.path.exists(path):
+                os.remove(path)
+            else:
+                print("cannot remove " + filename + " because the file does not exists in local pc")
+
     def extract_variable_values(self, current_time=None):
         # set analyzer
         nwp_grid_analyzer = NwpGridAnalyzer()
@@ -264,11 +366,11 @@ class NwpFileHandler:
 
         # make var index dic
         if self.data_type == "LDAPS":
-            nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
-            info_file_name = "LDAPS_variables_index_name.xlsx"
+            info_file_name = CONSTANT.ldaps_variable_index_file_name
+            nwp_var_info = pd.read_excel(CONSTANT.setting_file_path+info_file_name)
         else:
-            nwp_var_info = pd.read_excel("RDAPS_variables_index_name.xlsx")
-            info_file_name = "RDAPS_variables_index_name.xlsx"
+            info_file_name = CONSTANT.rdaps_variable_index_file_name
+            nwp_var_info = pd.read_excel(CONSTANT.setting_file_path+info_file_name)
         # nwp_var_info = pd.read_excel("LDAPS_variables_index_name.xlsx")
         nwp_var_index_dic = nwp_var_info.set_index("var_abbrev")["index"]
 
@@ -306,7 +408,7 @@ class NwpFileHandler:
                 # fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
 
             if os.path.exists(path) is False:
-                print("cannot extract values from " + filename + " because the file does not exists in local pc")
+                print(CONSTANT.value_extract_exception_text.format(filename))
                 continue
             else:
                 try:
@@ -316,6 +418,7 @@ class NwpFileHandler:
                         for var_name in col:
                             # extract variable index
                             # already filled with
+                            value = None
                             if var_name == "CRTN_TM" or var_name == "horizon" or var_name == "FCST_TM" or var_name == "Coordinates":
                                 continue
                             index = nwp_var_index_dic[var_name].item()
@@ -340,8 +443,8 @@ class NwpFileHandler:
                         row = pd.Series(row, index=col)
                         df = df.append(row, ignore_index=True)
                     nwp_file.close()
-                except BaseException as e:
-                    print(e, ": Runtime Error Ocurred with file {}".format(filename))
+                except BaseException as error:
+                    print(error, CONSTANT.runtime_error_text.format(filename))
 
             visualizer.print_progress(i, len(file_name_list), 'Value Extract Progress:', 'Complete', 1, 50)
 
@@ -356,90 +459,6 @@ class NwpFileHandler:
 
         # print(df)
         return df
-
-    def make_historical_prediction_data(self, horizon_num, comparison_type):
-        self.file_name_list = []
-
-        start_time = self.time_interval[0]
-        end_time = self.time_interval[1]
-
-        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H")
-        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H")
-
-        current_time = start_time
-
-        # length of time horizon
-        horizon_num = horizon_num + 1
-
-        # initialize dataframe
-        col = ["CRTN_TM", "horizon", "FCST_TM", "Coordinates"]
-        if self.nwp_var_list == "all":
-            self.nwp_var_list = pd.read_excel("LDAPS_variables_index_name.xlsx").set_index("index")["var_abbrev"].to_list()
-        for var in self.nwp_var_list:
-            col.append(var)
-        df = pd.DataFrame(columns=col)
-
-        if comparison_type == "daily":
-            dif = 24
-        elif comparison_type == "hourly":
-            dif = 1
-
-        visualizer = Visualizer()
-        total_num = 0
-        while 1:
-            self.set_nearest_nwp_prediction_file_names(current_time, horizon_num)
-            total_num += len(self.file_name_list)
-            current_time = current_time + datetime.timedelta(hours=dif)
-            if current_time > end_time:
-                break
-
-        # download process
-        # self.download_scheduled_list = list(set.union(*map(set, self.download_scheduled_list)))
-        self.save_file_from_ftp_server()
-        self.already_downloaded = True
-
-        i = 0
-        while 1:
-            self.set_nearest_nwp_prediction_file_names(current_time, horizon_num)
-            df_each_prediction = self.extract_variable_values(current_time)
-            df = df.append(df_each_prediction, sort=False)
-
-            current_time = current_time + datetime.timedelta(hours=dif)
-
-            i += 1
-            visualizer.print_progress(i, total_num, 'Value Extract Progress:', 'Complete', 1, 50)
-
-            if current_time > end_time:
-                break
-
-        return df
-
-    def make_real_time_prediction_data(self, horizon_num, comparison_type):
-
-        pass
-
-    def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
-        try:
-            current_dir = "/" + folder_name
-            self.ftp.cwd(current_dir)
-
-            path = os.path.join(local_path, filename)
-            if os.path.exists(path):
-                print(filename + " already exists in local pc")
-            new_file = open(path, "wb")
-            self.ftp.retrbinary("RETR " + filename, new_file.write)
-            new_file.close()
-        except ftplib.error_perm:
-            os.remove(path)
-            print("cannot download " + filename + " from ftp server because the file does not exists in ftp server")
-
-    def remove_from_local_pc(self):
-        for filename in self.file_name_list:
-            path = os.path.join(self.local_path, filename)
-            if os.path.exists(path):
-                os.remove(path)
-            else:
-                print("cannot remove " + filename + " because the file does not exists in local pc")
 
     # for convinience
     def check_total_size_of_files(self):
@@ -457,12 +476,6 @@ class NwpFileHandler:
                 except ftplib.error_perm:
                     print(file_name + " not exists in ftp server")
         print("total size of files : ", float(file_size)/(1024*1024*1024), "gb", ", total number of files :", file_num)
-
-    def set_local_path(self, local_path="/home/jhpark/NWP"):
-        self.local_path = local_path
-
-    def set_prediction_model(self, model_path):
-        self.prediction_model = keras.models.load_model("irr_prediction_model.h5")
 
     def close(self):
         self.ftp.quit()

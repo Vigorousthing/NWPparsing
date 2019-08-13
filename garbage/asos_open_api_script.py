@@ -1,7 +1,6 @@
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
-import httplib
 import json
 import pandas as pd
 import re
@@ -81,7 +80,7 @@ def open_api(time_interval, station_num):
         num = 999
         if res.json()[1]["msg"] != "success":
             url = url.format(startDt, startHh, endDt, endHh, station_num, num, 1)
-            print requests.get(url, verify=False).json()
+            print(requests.get(url, verify=False).json())
             break
 
         mem = df
@@ -89,7 +88,7 @@ def open_api(time_interval, station_num):
         df = df.append(mem)
 
         # js["ICSR"] = js["ICSR"] * 278
-    print df
+    print(df)
 
 open_api(time_interval, 108)
 

@@ -1,10 +1,10 @@
-import ftp_CONSTANT
+import CONSTANT
 from nwp_parsing import *
 
 ##################################################################################################
-ip = ftp_CONSTANT.ftp_ip
-id, pw = ftp_CONSTANT.ftp_id, ftp_CONSTANT.ftp_pw
-local_path = ftp_CONSTANT.local_path
+ip = CONSTANT.ftp_ip
+id, pw = CONSTANT.ftp_id, CONSTANT.ftp_pw
+local_path = CONSTANT.local_path
 nwp_file_handler = NwpFileHandler(ip, id, pw)
 ##################################################################################################
 '''
