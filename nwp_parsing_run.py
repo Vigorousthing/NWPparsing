@@ -29,13 +29,15 @@ fold_type = "unis"
 # time_interval = ["2019-04-10 00", "2019-04-17 00"]
 # time_interval = ["2019-05-15 00", "2019-05-22 00"]
 # time_interval = ["2019-04-17 00", "2019-04-20 23"]
-time_interval = ["2019-05-22 00", "2019-05-25 23"]
+# time_interval = ["2019-08-10 00", "2019-08-12 23"]
+time_interval = ["2019-08-10 00", "2019-08-12 12"]
+
 
 # time_interval = ["2019-05-08 09", "2019-05-08 10"]
-horizon_interval = [0, 36]
+horizon_interval = [0, 48]
 time_point = ["00", "09", "12", "18"]
 # var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
-var_list = ["NDNSW", "SWDIR", "SWDIF", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
+var_list = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "NDNLW", "OULWT", "DLWS"]
 # var_list = ["SWDIR", "SWDIF"]
 
 # var_list = "all"
@@ -43,7 +45,8 @@ nearest_type = 1
 
 # point = [(37.57142, 126.9658)]
 # point = [(37.38916, 127.62097), (37.36872, 127.64302), (34.59612, 126.29099), (36.17202, 126.78948), (37.10368, 128.24847)]
-point = [(37.566601, 127.168451), (37.701720, 127.052289), (37.651369, 126.906272), (37.578967, 126.793614)]
+# point = [(37.566601, 127.168451), (37.701720, 127.052289), (37.651369, 126.906272), (37.578967, 126.793614)]
+point = [(36.149082, 127.175952)]
 
 # current_time = datetime.datetime.now()
 # real_df condition
@@ -68,22 +71,29 @@ point = [(37.566601, 127.168451), (37.701720, 127.052289), (37.651369, 126.90627
 # ftp_accessor.save_target_file("RDAPS", "g120_v070_erea_pres_h060.2019041118.gb2", "/home/jhpark/experiment_sth")
 # current_time = datetime.datetime.now() -datetime.timedelta(days=30)
 
-current_time = "2019-05-08 10"
-current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
+# current_time = "2019-05-08 10"
+# current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
 
 # base setting
+import time
+start_time = time.time()
+
 ftp_accessor = NwpFileHandler(ip, id, pw, True)
 ftp_accessor.set_for_files(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
 ftp_accessor.set_for_values(var_list, nearest_type, point)
-df = ftp_accessor.make_historical_prediction_data(36, "daily")
+# df = ftp_accessor.make_historical_prediction_data(48, "daily")
+df = ftp_accessor.make_training_data()
+end_time = time.time()
 
+print("progressed: ", end_time - start_time)
 # ftp_accessor.set_nearest_nwp_prediction_file_from_current_time(current_time, horizon_num=36)
 # call main job function
 # ftp_accessor.set_file_names()
 # ftp_accessor.save_file_from_ftp_server()
 # files = ftp_accessor.set_nearest_nwp_prediction_file(current_time, 36)
 # df = ftp_accessor.extract_variable_values()
-df.to_excel("/home/jhpark/experiment_files/522to25daily.xlsx")
+
+# df.to_excel("/home/jhpark/experiment_files/fornwpcorr.xlsx")
 
 # if __name__ == "__main__":
 #     nwp_file = pygrib.open("/home/jhpark/NWP/l015_v070_erlo_unis_h000.2019041518.gb2")

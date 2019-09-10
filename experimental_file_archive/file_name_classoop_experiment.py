@@ -6,8 +6,8 @@ from haversine import *
 import matplotlib.pyplot as plt
 import pandas as pd
 import re
-import sys
 import os
+import sys
 import CONSTANT
 
 
@@ -316,12 +316,11 @@ class NwpFileHandler:
                                 # When it's real time, download_scheduled_list is equal to file_name_list
                                 self.file_name_list[num] = temp_filename
                                 break
-                            except BaseException:
+                            except:
                                 os.remove(new_path)
 
             visualizer.print_progress(num, len(self.download_scheduled_list), 'Download Progress:', 'Complete', 1, 50)
 
-    # non-main function
     def save_target_file(self, folder_name, filename, local_path="/home/jhpark/NWP/"):
         path = None
         try:
@@ -350,6 +349,11 @@ class NwpFileHandler:
         # set analyzer
         nwp_grid_analyzer = NwpGridAnalyzer()
 
+        # align filename with purpose
+        # if purpose == "training":
+        #     file_name_list = self.file_name_list
+        # elif purpose == "prediction":
+        #     file_name_list = self.nearest_file_list
         file_name_list = self.file_name_list
 
         path = os.path.join(self.local_path, file_name_list[0])
@@ -454,6 +458,7 @@ class NwpFileHandler:
         # print(df)
         return df
 
+    # for convinience
     def check_total_size_of_files(self):
         current_dir = "/" + self.data_type
         self.ftp.cwd(current_dir)
@@ -472,23 +477,6 @@ class NwpFileHandler:
 
     def close(self):
         self.ftp.quit()
-
-
-class NwpFile:
-    def __init__(self, data_type):
-        # data type / unis or pres / horizon / date
-        self.name = "{}_{}_h0{}.{}.gb2"
-
-    def set_name(self):
-
-        pass
-
-    def change_name(self):
-
-        pass
-
-    def all_targeted_time_horizon(self):
-        pass
 
 
 class Visualizer:

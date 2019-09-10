@@ -317,58 +317,99 @@ from multiprocessing import Process
 # workerA = MyWorker()
 # workerA.modifyBoth()
 
-class Publisher(threading.Thread):
-    def __init__(self, integers, condition):
-        self.condition = condition
-        self.integers = integers
+# class Publisher(threading.Thread):
+#     def __init__(self, integers, condition):
+#         self.condition = condition
+#         self.integers = integers
+#         threading.Thread.__init__(self)
+#
+#     def run(self):
+#         while True:
+#             integer = random.randint(0, 1000)
+#             self.condition.acquire()
+#             print("condition acquired by publisher: {}".format(self.name))
+#             self.integers.append(integer)
+#             self.condition.notify()
+#             print("condition released by publisher: {}".format(self.name))
+#             self.condition.release()
+#             time.sleep(1)
+#
+#
+# class Subscriber(threading.Thread):
+#     def __init__(self, integers, condition):
+#         self.integers = integers
+#         self.condition = condition
+#         threading.Thread.__init__(self)
+#
+#     def run(self):
+#         while True:
+#             self.condition.acquire()
+#             print("condition acquired by consumer: {}".format(self.name))
+#             while True:
+#                 if self.integers:
+#                     integer = self.integers.pop()
+#                     print("{} popped from list by consumer: {}".format(integer, self.name))
+#                     break
+#                     print("condition wait by {}".format(self.name))
+#                     self.condition.wait()
+#                 print("condition wait by {}".format(self.name))
+#                 self.condition.wait()
+#             print("consumer {} releasing condition".format(self.name))
+#             self.condition.release()
+#
+#
+# integers = []
+# condition = threading.Condition()
+# pub1 = Publisher(integers, condition)
+# pub1.start()
+#
+# sub1 = Subscriber(integers, condition)
+# sub2 = Subscriber(integers, condition)
+# sub1.start()
+# sub2.start()
+#
+# pub1.join()
+#
+# sub1.join()
+# sub2.join()
+
+class TicketSeller(threading.Thread):
+    ticketsSold = 0
+
+    def __init__(self, semaphore):
         threading.Thread.__init__(self)
+        self.sem = semaphore
+        print("ticket seller started work")
 
     def run(self):
-        while True:
-            integer = random.randint(0, 1000)
-            self.condition.acquire()
-            print("condition acquired by publisher: {}".format(self.name))
-            self.integers.append(integer)
-            self.condition.notify()
-            print("condition released by publisher: {}".format(self.name))
-            self.condition.release()
-            time.sleep(1)
+        global ticketsAvailable
+        running = True
+        while running:
+            self.randomDelay()
+            self.sem.acquire()
+            print(self.getName(), "acquired")
+            if ticketsAvailable <= 0:
+                running = False
+            else:
+                self.ticketsSold = self.ticketsSold + 1
+                ticketsAvailable = ticketsAvailable - 1
+                print("{} Sold One ({} left)".format(self.getName(), ticketsAvailable))
+            self.sem.release()
+        print("ticket seller {} sold {} tickets in total".format(self.getName(), self.ticketsSold))
+
+    def randomDelay(self):
+        time.sleep(random.randint(0, 1))
 
 
-class Subscriber(threading.Thread):
-    def __init__(self, integers, condition):
-        self.integers = integers
-        self.condition = condition
-        threading.Thread.__init__(self)
+semaphore = threading.Semaphore()
+ticketsAvailable = 10
+sellers = []
+for i in range(4):
+    seller = TicketSeller(semaphore)
+    seller.start()
+    sellers.append(seller)
 
-    def run(self):
-        while True:
-            self.condition.acquire()
-            print("condition acquired by consumer: {}".format(self.name))
-            while True:
-                if self.integers:
-                    integer = self.integers.pop()
-                    print("{} popped from list by consumer: {}".format(integer, self.name))
-                    break
-                    print("condition wait by {}".format(self.name))
-                    self.condition.wait()
-                print("condition wait by {}".format(self.name))
-                self.condition.wait()
-            print("consumer {} releasing condition".format(self.name))
-            self.condition.release()
+for seller in sellers:
+    seller.join()
 
 
-integers = []
-condition = threading.Condition()
-pub1 = Publisher(integers, condition)
-pub1.start()
-
-sub1 = Subscriber(integers, condition)
-sub2 = Subscriber(integers, condition)
-sub1.start()
-sub2.start()
-
-pub1.join()
-
-sub1.join()
-sub2.join()
