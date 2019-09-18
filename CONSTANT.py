@@ -1,6 +1,9 @@
 ftp_ip = "10.0.0.3"
 ftp_id, ftp_pw = "kmiti", "kmadataset!"
+ftp_ROOT = "/"
+
 local_path = "/home/jhpark/NWP/"
+download_path = "/home/jhpark/NWP/"
 
 setting_file_path = "/home/jhpark/PycharmProjects/NWPparsing/setting_files/"
 prediction_input_output_path = "/home/jhpark/PycharmProjects/NWPparsing/setting_files/"

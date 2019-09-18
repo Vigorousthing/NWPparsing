@@ -7,9 +7,8 @@ from haversine import *
 import pandas as pd
 import CONSTANT
 import os
-import threading
-import queue
 import multiprocessing
+import ftplib
 
 
 class NwpFiles:
@@ -81,17 +80,19 @@ class FilesContainer:
 
         self.container = multiprocessing.Manager().Queue()
         self.output_container = multiprocessing.Manager().Queue()
-        # self.container = queue.Queue()
+
+        self.filename_list = []
 
     def generate_base_files(self):
         current_time = self.start_time
-        while current_time < self.end_time:
+        while current_time <= self.end_time:
             date_string = re.sub('[^A-Za-z0-9]+', '', str(current_time))[:-4]
             for horizon in range(self.type.full_horizon + 1):
                 if horizon % self.type.prediction_interval == 0:
-                    self.container.put(self.type(self.fold_type, horizon, date_string, self.location_points, self.variables))
+                    file_object = self.type(self.fold_type, horizon, date_string, self.location_points, self.variables)
+                    self.container.put(file_object)
+                    self.filename_list.append(file_object.name)
             current_time = current_time + datetime.timedelta(hours=6)
-
 
     @staticmethod
     def time_alignment(time_interval):
@@ -102,6 +103,73 @@ class FilesContainer:
         if end_time.hour % 6 != 0:
             end_time = end_time - datetime.timedelta(hours=end_time.hour % 6)
         return start_time, end_time
+
+
+class FtpAccessor:
+    def __init__(self, ip, id, pw):
+        self.ftp = ftplib.FTP()
+        self.ftp.connect(ip)
+        self.ftp.login(id, pw)
+
+    def download_files(self, filename_list, file_type):
+        self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
+
+        for filename in filename_list:
+            # try:
+            #     path = os.path.join(CONSTANT.download_path, filename)
+            #     if os.path.exists(path):
+            #         print(CONSTANT.already_exists_text.format(filename))
+            #         continue
+            #     else:
+            #         new_file = open(path, "wb")
+            #         self.ftp.retrbinary("RETR " + filename, new_file.write)
+            #         new_file.close()
+            # except ftplib.error_perm:
+            #     os.remove(path)
+            #     new_file.close()
+            #     print(CONSTANT.download_exception_text.format(filename))
+            #
+
+            path = os.path.join(CONSTANT.download_path, filename)
+            if os.path.exists(path):
+                print(CONSTANT.already_exists_text.format(filename))
+                continue
+            else:
+                try:
+                    new_file = open(path, "wb")
+                    self.ftp.retrbinary("RETR " + filename, new_file.write)
+                    new_file.close()
+                except ftplib.error_perm:
+                    os.remove(path)
+                    new_file.close()
+                    print(CONSTANT.download_exception_text.format(filename))
+
+    def size_check(self, filename_list, file_type):
+        self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
+
+        file_size = 0
+        file_num = 0
+        for file_name in filename_list:
+            path = os.path.join(CONSTANT.local_path, file_name)
+            if not os.path.exists(path):
+                try:
+                    file_size += self.ftp.size(file_name)
+                    file_num += 1
+                except ftplib.error_perm:
+                    print(file_name + " not exists in ftp server")
+        print("total size of files : ", float(file_size) / (1024 * 1024 * 1024), "gb", ", total number of files :",
+              file_num)
+
+    def remove_from_local_pc(self, filename_list):
+        for filename in filename_list:
+            path = os.path.join(CONSTANT.local_path, filename)
+            if os.path.exists(path):
+                os.remove(path)
+            else:
+                print("cannot remove " + filename + " because the file does not exists in local pc")
+
+    def close(self):
+        self.ftp.close()
 
 
 class IndividualDataCollector(multiprocessing.Process):
@@ -162,6 +230,7 @@ class IndividualDataCollector(multiprocessing.Process):
             self.df = self.df.append(df)
         self.output_container.put(self.df)
 
+
 class DataOrganizer:
     def __init__(self, grid_analyzer, files_container):
         self.total_df = None
@@ -182,6 +251,8 @@ class DataOrganizer:
         for i in range(1, num_of_indiv_collector):
             self.total_df = self.total_df.append(self.files_container.output_container.get())
 
+        # for i in range(num_of_indiv_collector):
+        #     self.individual_collector[i].close()
         # self.total_df = self.individual_collector[0].df
         # for i in range(1, num_of_indiv_collector):
         #     self.total_df = self.total_df.append(self.individual_collector[i].df)
