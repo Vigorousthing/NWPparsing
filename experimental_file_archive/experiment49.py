@@ -28,13 +28,24 @@
 # result.take(10)
 
 
-import queue
+import os
+import pandas as pd
 
-a = queue.Queue()
+# df = None
+# root_path = "/home/jhpark/data_files/"
+# for i, filename in enumerate(os.listdir(root_path)):
+#     path = os.path.join(root_path, filename)
+#     each_file = pd.read_excel(path)
+#
+#     # print(each_file.shape)
+#     if i == 0:
+#         df = each_file
+#     else:
+#         df = df.append(each_file)
+# df.to_excel("/home/jhpark/experiment_files/whatisthisdf.xlsx")
 
-a.put(1)
-a.put(2)
-a.put(3)
+a = (1,2)
+b = (1,2)
 
-
-
+print(a == b)
+print(len(a), len(str(a)))

@@ -1,6 +1,3 @@
-import nwp_parsing
-
-
 def remove_files(ftp_accessor, data_type, fold_type, time_interval, horizon_interval=[0, 36]):
     ftp_accessor.data_type_setting(data_type, fold_type, time_interval, horizon_interval=horizon_interval)
     ftp_accessor.set_file_names_for_training()

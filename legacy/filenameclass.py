@@ -9,6 +9,7 @@ import CONSTANT
 import os
 import multiprocessing
 import ftplib
+import sys
 
 
 class NwpFiles:
@@ -107,7 +108,13 @@ class FilesContainer:
 
 class FtpAccessor:
     def __init__(self, ip, id, pw):
+        self.ip = ip
+        self.id = id
+        self.pw = pw
+
         self.ftp = ftplib.FTP()
+
+        # how to check connection
         self.ftp.connect(ip)
         self.ftp.login(id, pw)
 
@@ -115,21 +122,6 @@ class FtpAccessor:
         self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
 
         for filename in filename_list:
-            # try:
-            #     path = os.path.join(CONSTANT.download_path, filename)
-            #     if os.path.exists(path):
-            #         print(CONSTANT.already_exists_text.format(filename))
-            #         continue
-            #     else:
-            #         new_file = open(path, "wb")
-            #         self.ftp.retrbinary("RETR " + filename, new_file.write)
-            #         new_file.close()
-            # except ftplib.error_perm:
-            #     os.remove(path)
-            #     new_file.close()
-            #     print(CONSTANT.download_exception_text.format(filename))
-            #
-
             path = os.path.join(CONSTANT.download_path, filename)
             if os.path.exists(path):
                 print(CONSTANT.already_exists_text.format(filename))
@@ -141,8 +133,22 @@ class FtpAccessor:
                     new_file.close()
                 except ftplib.error_perm:
                     os.remove(path)
-                    new_file.close()
+                    # new_file.close()
                     print(CONSTANT.download_exception_text.format(filename))
+
+        self.ftp.close()
+
+    def reconnect(self):
+        self.ftp.connect(self.ip)
+        self.ftp.login(self.id, self.pw)
+
+    def check_connection(self):
+        try:
+            self.ftp.voidcmd("NOOP")
+        except AttributeError:
+            return False
+        else:
+            return True
 
     def size_check(self, filename_list, file_type):
         self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
@@ -195,32 +201,39 @@ class IndividualDataCollector(multiprocessing.Process):
                 grid_analyzer.set_lat_lon_grid(pygrib_file[1].latlons()[0], pygrib_file[1].latlons()[1])
             return nwp_var_index_dic
 
-        # empty queue exception handling needed
-        file = self.files_container.get()
-        pygrib_file = pygrib.open(os.path.join(CONSTANT.local_path, file.name))
+        try:
+            file = self.files_container.get()
+            pygrib_file = pygrib.open(os.path.join(CONSTANT.local_path, file.name))
 
-        nwp_var_index_dic = base_setting(self.grid_analyzer)
-        df, column = base_dataframe_with_column(file.variables, file.info_file_name)
+            nwp_var_index_dic = base_setting(self.grid_analyzer)
+            df, column = base_dataframe_with_column(file.variables, file.info_file_name)
 
-        for point in file.location_points:
-            row = [file.crtn_tm, file.horizon, file.fcst_tm, point]
-            for i, var_name in enumerate(file.variables):
-                # if i < 4:
-                #     # skip crtn_tm, horizon, fcst_tm, point column
-                #     continue
-                var_index_inside_pygrib_file = nwp_var_index_dic[var_name].item()
-                if nearest_type == 1:
-                    nearest_point_index = self.grid_analyzer.nearest_point_index(point[0], point[1])
-                    value = pygrib_file[var_index_inside_pygrib_file].values[nearest_point_index[0]][nearest_point_index[1]]
-                else:
-                    var_grid_values = pygrib_file[var_index_inside_pygrib_file].values
-                    nearest_point_dis_index_dic, _ = self.grid_analyzer.nearest_n_grid_point(point[0], point[1], nearest_type)
-                    value = self.grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
-                row.append(value)
-            row = pd.Series(row, index=column)
-            df = df.append(row, ignore_index=True)
-        pygrib_file.close()
-        print(file.name)
+            crtn_tm = file.crtn_tm + datetime.timedelta(hours=9)
+            fcst_tm = file.fcst_tm + datetime.timedelta(hours=9)
+
+            for point in file.location_points:
+                row = [crtn_tm, file.horizon, fcst_tm, point]
+                for i, var_name in enumerate(file.variables):
+                    # if i < 4:
+                    #     # skip crtn_tm, horizon, fcst_tm, point column
+                    #     continue
+                    var_index_inside_pygrib_file = nwp_var_index_dic[var_name].item()
+                    if nearest_type == 1:
+                        nearest_point_index = self.grid_analyzer.nearest_point_index(point[0], point[1])
+                        value = pygrib_file[var_index_inside_pygrib_file].values[nearest_point_index[0]][nearest_point_index[1]]
+                    else:
+                        var_grid_values = pygrib_file[var_index_inside_pygrib_file].values
+                        nearest_point_dis_index_dic, _ = self.grid_analyzer.nearest_n_grid_point(point[0], point[1], nearest_type)
+                        value = self.grid_analyzer.nearest_n_point_weighted_value(var_grid_values, nearest_point_dis_index_dic)
+                    row.append(value)
+                row = pd.Series(row, index=column)
+                df = df.append(row, ignore_index=True)
+            pygrib_file.close()
+
+        except BaseException as e:
+            print(e)
+
+        # print(file.name)
         return df
 
     def run(self):
@@ -257,6 +270,29 @@ class DataOrganizer:
         # for i in range(1, num_of_indiv_collector):
         #     self.total_df = self.total_df.append(self.individual_collector[i].df)
         return self.total_df
+
+
+class Visualizer:
+    def __init__(self):
+        pass
+
+    def correlation_matrix(self, df, col_name_list):
+        corr_df = df[col_name_list].corr()
+        plt.matshow(corr_df)
+        plt.xticks(range(len(corr_df.columns)), corr_df.columns)
+        plt.yticks(range(len(corr_df.columns)), corr_df.columns)
+        plt.colorbar()
+        plt.show()
+
+    def print_progress(self, iteration, total, prefix='', suffix='', decimals=1, barLength=100):
+        formatStr = "{0:." + str(decimals) + "f}"
+        percent = formatStr.format(100 * (iteration / float(total)))
+        filledLength = int(round(barLength * iteration / float(total)))
+        bar = '#' * filledLength + '-' * (barLength - filledLength)
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percent, '%', suffix)),
+        if iteration == total:
+            sys.stdout.write('\n')
+            sys.stdout.flush()
 
 
 class NwpGridAnalyzer:

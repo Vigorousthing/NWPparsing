@@ -36,12 +36,13 @@ print(prediction_X)
 # model.fit(training_X, training_Y, epochs=200, batch_size=1000)
 #
 # model.save("521prediction.h5")
+
 model = keras.models.load_model("521prediction.h5")
 prediction = model.predict(prediction_X)
 #
 # print prediction
 prediction = np.asarray([x[0] for x in prediction])
-np.savetxt("dailypredictionoutput.csv", prediction, delimiter=",")
+# np.savetxt("dailypredictionoutput.csv", prediction, delimiter=",")
 #
 # nape_list = np.abs(prediction - real_Y)/99
 #

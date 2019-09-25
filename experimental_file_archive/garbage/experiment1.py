@@ -1,7 +1,6 @@
 import pygrib
 import pandas as pd
-import numpy as np
-import nwp_parsing
+from legacy import nwp_parsing
 
 # a = pygrib.open("/home/jhpark/PycharmProjects/NWPparsing/l015_v070_erlo_unis_h035.2019030806.gb2")
 # a = pygrib.open("/home/jhpark/NWP/l015_v070_erlo_unis_h012.2019031200.gb2")

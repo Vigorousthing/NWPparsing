@@ -1,5 +1,4 @@
-import CONSTANT
-from nwp_parsing import *
+from legacy.nwp_parsing import *
 
 ##################################################################################################
 ip = CONSTANT.ftp_ip
