@@ -1,6 +1,6 @@
 import multiprocessing
 import time
-from util import Visualizer
+from util.Visualizer import Visualizer
 
 
 class QueueJobProgressIndicator(multiprocessing.Process):

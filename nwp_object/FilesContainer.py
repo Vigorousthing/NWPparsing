@@ -4,7 +4,7 @@ import re
 
 
 class FilesContainer:
-    def __init__(self, container_class, fold_type, location_points, variables):
+    def __init__(self, container_class, fold_type, location_points, variables="all"):
         self.type = container_class
         self.fold_type = fold_type
         self.location_points = location_points
@@ -14,6 +14,7 @@ class FilesContainer:
 
         self.start_time = None
         self.end_time = None
+        self.prediction_time = None
 
         self.container = multiprocessing.Manager().Queue()
         self.output_container = multiprocessing.Manager().Queue()
@@ -37,6 +38,7 @@ class FilesContainer:
         # input parameter type can be changed to datetime object
         current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")\
                        - datetime.timedelta(hours=9)
+
         dif_from_last_prediction = current_time.hour % 6
         prediction_start = current_time - datetime.timedelta(hours=dif_from_last_prediction)
         new_horizon = self.type.full_horizon - dif_from_last_prediction
