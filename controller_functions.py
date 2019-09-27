@@ -3,6 +3,7 @@ from data_extract.DataOrganizer import DataOrganizer
 from util.QueueJobProgressIndicator import QueueJobProgressIndicator
 import keras
 import numpy as np
+import pandas as pd
 import datetime
 
 
@@ -23,7 +24,14 @@ def amend_prediction_df(prediction_df, prediction, current_time):
     return prediction_df
 
 
-def create_prediction(container, ftp_accessor, analyzer, current_time, model_name):
+def merge_two_dfs(join_key_list, df1, df2):
+    joined_df = pd.merge(left=df1, right=df2,
+                         how="left", on=join_key_list)
+    joined_df = joined_df.fillna(0)
+    return joined_df
+
+
+def create_current_prediction(container, ftp_accessor, analyzer, current_time, model_name):
     container.generate_base_prediction_files(current_time)
     filename_list = container.filename_list
 
@@ -44,3 +52,21 @@ def create_prediction(container, ftp_accessor, analyzer, current_time, model_nam
     prediction = model.predict(np.array(input_df))
 
     return amend_prediction_df(prediction_df, prediction, current_time)
+
+
+def create_interval_prediction(container, ftp_accessor, time_interval, prediction_type):
+    start_time, end_time = container.time_alignment(time_interval)
+    current_time = start_time
+    if prediction_type == "daily":
+        time_step = 24
+    else:
+        time_step = 6
+
+    # download
+    download_set = {None}
+    while current_time <= end_time:
+        container.generate_base_prediction_files(current_time)
+        download_set.union(set(container.filname_list))
+        current_time += datetime.timedelta(hours=time_step)
+    ftp_accessor.download_files(download_set, container.type.nwp_type)
+

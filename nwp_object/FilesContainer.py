@@ -34,7 +34,7 @@ class FilesContainer:
             current_time = current_time + datetime.timedelta(hours=6)
 
     def generate_base_prediction_files(self, current_time):
-        # self.filename_list = []
+        self.filename_list = []
         # input parameter type can be changed to datetime object
         current_time = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")\
                        - datetime.timedelta(hours=9)
