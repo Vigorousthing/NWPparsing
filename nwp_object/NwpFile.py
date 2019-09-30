@@ -1,6 +1,7 @@
 import CONSTANT
 import datetime
 import pandas as pd
+from util.input_converter import InputConverter
 
 
 class NwpFiles:
@@ -10,11 +11,15 @@ class NwpFiles:
     prefix = None
     info_file_name = None
     nwp_var_info = None
+    converter = InputConverter()
 
     def __init__(self, fold, horizon, crtn_tm, location_points, variables="all"):
-        self.name = "{}_{}_h{}.{}.gb2".format(self.prefix, fold, str(horizon).zfill(3), crtn_tm)
-        self.crtn_tm = datetime.datetime.strptime(crtn_tm, "%Y%m%d%H")
-        self.fcst_tm = datetime.datetime.strptime(crtn_tm, "%Y%m%d%H") + datetime.timedelta(hours=horizon)
+        self.name = "{}_{}_h{}.{}.gb2".format(
+            self.prefix, fold,
+            str(horizon).zfill(3),
+            self.converter.string_conversion(crtn_tm))
+        self.crtn_tm = crtn_tm
+        self.fcst_tm = crtn_tm + datetime.timedelta(hours=horizon)
 
         self.horizon = horizon
 
@@ -22,18 +27,6 @@ class NwpFiles:
 
         self.location_points = location_points
         self.variables = variables
-
-        # self.set_property(fold, horizon, crtn_tm)
-        self.generate_probable_crtn_tm()
-
-    # def set_property(self, fold, horizon, crtn_tm):
-    #     self.name = self.name.format(self.prefix, fold, str(horizon).zfill(3), crtn_tm)
-    #     self.crtn_tm = datetime.datetime.strptime(crtn_tm, "%Y%m%d%H")
-    #     self.fcst_tm = datetime.datetime.strptime(crtn_tm, "%Y%m%d%H") + datetime.timedelta(hours=horizon)
-
-    def generate_probable_crtn_tm(self):
-        for i in range(6):
-            self.probable_crtn_tm[i] = self.crtn_tm + datetime.timedelta(hours=i)
 
 
 class LdapsFile(NwpFiles):

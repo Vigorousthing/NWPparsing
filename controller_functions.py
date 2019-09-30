@@ -35,27 +35,10 @@ class Controller:
         self.master = DataOrganizer(self.analyzer, self.container)
 
     def create_training_df(self):
-        def split_time(converted_time_interval):
-            time_interval_list = []
-            start, end = converted_time_interval
-            temp_list = []
-            while start <= end:
-                temp_list.append(start)
-                start += datetime.timedelta(days=CONSTANT.
-                                            length_of_time_interval_for_training)
-                if start <= end:
-                    temp_list.append(end)
-                else:
-                    temp_list.append(start)
-                    start += datetime.timedelta(hours=1)
-                temp_list = []
-            return time_interval_list
-
         df = None
-
         converted_interval = self.input_converter.time_interval_conversion(
             self.time_info)
-        time_interval_list = split_time(converted_interval)
+        time_interval_list = self.split_time(converted_interval)
 
         for i, time_interval in enumerate(time_interval_list):
             self.container.generate_base_files(time_interval)
@@ -65,7 +48,6 @@ class Controller:
             self.ftp_accessor.download_files(filename_list,
                                              self.container.type.nwp_type)
             self.queuejobchecker.start()
-
             start = time.time()
             temp_df = self.master.data_collect(CONSTANT.num_of_process)
             temp_df.to_excel(
@@ -83,7 +65,9 @@ class Controller:
         df.to_excel("/home/jhpark/experiment_files/training_data.xlsx")
 
     def create_current_predcition(self, model_name):
-        self.container.generate_base_prediction_files(self.time_info)
+        current_time = self.input_converter.current_time_conversion(
+            self.time_info)
+        self.container.generate_base_prediction_files(current_time)
         filename_list = self.container.filename_list
 
         if not self.ftp_accessor.check_connection():
@@ -104,9 +88,9 @@ class Controller:
         return self.amend_prediction_df(prediction_df, prediction,
                                        self.time_info)
 
-    @staticmethod
-    def amend_prediction_df(prediction_df, prediction, current_time):
-        prediction_df["CRTN_TM"] = datetime.datetime.strptime(current_time, "%Y-%m-%d %H")
+    def amend_prediction_df(self, prediction_df, prediction, current_time):
+        prediction_df["CRTN_TM"] = \
+            self.input_converter.current_time_conversion(current_time)
         prediction_df["new_horizon"] = prediction_df.apply(
             lambda row: int(
                         (row.FCST_TM - row.CRTN_TM).days * 24 +
@@ -116,6 +100,24 @@ class Controller:
         prediction_df["prediction"] = prediction
         prediction_df = prediction_df.drop(columns=["horizon"])
         return prediction_df
+
+    @staticmethod
+    def split_time(converted_time_interval):
+        time_interval_list = []
+        start, end = converted_time_interval
+        temp_list = []
+        while start <= end:
+            temp_list.append(start)
+            start += datetime.timedelta(days=CONSTANT.
+                                        length_of_time_interval_for_training)
+            if start <= end:
+                temp_list.append(end)
+                break
+            else:
+                temp_list.append(start)
+                start += datetime.timedelta(hours=1)
+            temp_list = []
+        return time_interval_list
 
 
 def merge_two_dfs(join_key_list, df1, df2):
@@ -170,3 +172,4 @@ def create_interval_prediction(container, ftp_accessor, time_interval, predictio
         container.generate_base_prediction_files(current_time)
         download_set.union(set(container.filname_list))
         current_time += datetime.timedelta(hours=time_step)
+

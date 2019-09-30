@@ -11,8 +11,8 @@ from util.QueueJobProgressIndicator import QueueJobProgressIndicator
 from controller_functions import *
 
 file_type = LdapsFile
-current_time = "2019-09-10 10"
-time_interval = ["2019-06-01 00", "2019-06-10 23"]
+current_time = 2019091010
+time_interval = [2019060100, 2019061023]
 fold_type = "unis"
 location_points = get_sitelist(MongodbConnector("sites", "sitesList").
                                find_latest())["Coordinates"].get_values().tolist()
@@ -24,7 +24,8 @@ controller = Controller(file_type, fold_type, current_time, location_points,
                         variables)
 df = controller.create_current_predcition("0930newmodel.h5")
 
-df.to_excel("/home/jhpark/experiment_files/prediction_exp.xlsx")
+print(df)
+# df.to_excel("/home/jhpark/experiment_files/prediction_exp.xlsx")
 # vpp_real_result = mongo_connector.aggregate(vpp_production_query(time_interval))
 # prediction_result = create_current_prediction(container, ftp_accessor, analyzer,
 #                                               current_time, "0924newmodel.h5")

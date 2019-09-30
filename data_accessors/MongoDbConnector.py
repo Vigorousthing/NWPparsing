@@ -5,6 +5,7 @@ import datetime
 import pandas as pd
 from new_model_creation import *
 from pandas.io.json import json_normalize
+from util.input_converter import InputConverter
 
 
 class MongodbConnector:
@@ -29,12 +30,14 @@ def get_sitelist(latest_document):
 
 
 def vpp_production_query(time_interval):
-    start_time = datetime.datetime.strptime(time_interval[0], "%Y-%m-%d %H") \
-                 - datetime.timedelta(hours=120)
-    end_time = datetime.datetime.strptime(time_interval[1], "%Y-%m-%d %H") \
-               + datetime.timedelta(hours=120)
-    start_time = start_time.strftime("%Y%m%d%H").zfill(12)
-    end_time = end_time.strftime("%Y%m%d%H").zfill(12)
+    converter = InputConverter()
+
+    start_time, end_time = converter.time_interval_conversion(time_interval)
+    start_time = start_time - datetime.timedelta(hours=120)
+    end_time = end_time + datetime.timedelta(hours=120)
+
+    start_time = converter.string_conversion(start_time).zfill(12)
+    end_time = converter.string_conversion(end_time).zfill(12)
 
     pipeline_for_real = [
         {"$match": {"CRTN_TM": {"$gt": "{}".format(start_time), "$lt": "{}".format(end_time)}}},

@@ -1,9 +1,4 @@
 import datetime
-import re
-
-a = 2019101003
-converted = datetime.datetime.strptime(str(a), "%Y%m%d%H")
-print(converted)
 
 
 class InputConverter:
@@ -18,5 +13,12 @@ class InputConverter:
 
     @staticmethod
     def current_time_conversion(current_time):
+        if type(current_time) == datetime.datetime:
+            return current_time
         return datetime.datetime.strptime(str(current_time), "%Y%m%d%H")
+
+    @staticmethod
+    def string_conversion(time):
+        return datetime.datetime.strftime(time, "%Y%m%d%H")
+
 
