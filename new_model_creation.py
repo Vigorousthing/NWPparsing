@@ -56,14 +56,27 @@ def model_create(model_name):
     # model.add(keras.layers.Dense(15, activation="relu"))
     # model.add(keras.layers.Dense(15, activation="relu"))
     # model.add(keras.layers.Dense(15, activation="relu"))
+    model.add(keras.layers.GaussianDropout(15))
     model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
-    model.add(keras.layers.MaxoutDense(15))
+    model.add(keras.layers.GaussianDropout(30))
+    model.add(keras.layers.MaxoutDense(30))
+    model.add(keras.layers.GaussianDropout(45))
+    model.add(keras.layers.MaxoutDense(45))
+    model.add(keras.layers.GaussianDropout(45))
+    model.add(keras.layers.MaxoutDense(45))
+    model.add(keras.layers.GaussianDropout(60))
+    model.add(keras.layers.MaxoutDense(60))
+    model.add(keras.layers.GaussianDropout(60))
+    model.add(keras.layers.MaxoutDense(60))
+    model.add(keras.layers.GaussianDropout(45))
+    model.add(keras.layers.MaxoutDense(45))
+    model.add(keras.layers.GaussianDropout(30))
+    model.add(keras.layers.MaxoutDense(30))
+    model.add(keras.layers.GaussianDropout(15))
+    # model.add(keras.layers.MaxoutDense(15))
+    # model.add(keras.layers.MaxoutDense(15))
+    # model.add(keras.layers.MaxoutDense(15))
+    # model.add(keras.layers.MaxoutDense(15))
     # model.add(keras.layers.Dense(15, activation="relu"))
     # model.add(keras.layers.Dense(15, activation="relu"))
     # model.add(keras.layers.Dense(15, activation="relu"))
@@ -71,19 +84,23 @@ def model_create(model_name):
     model.add(keras.layers.Dense(1, activation="linear"))
     model.compile(loss="mse", optimizer="adam", metrics=["accuracy"])
 
-    model.fit(training_X, training_Y, epochs=50)
+    model.fit(training_X, training_Y, batch_size=10000, epochs=100)
     model.save("data_file/model_files/"+model_name)
 
 
-def model_evaluation(model_name):
+def model_evaluation(model_name, same_with_training=False):
     base_df = pd.read_excel("/home/jhpark/data_files/training_base_left_plus1hour.xlsx")
     df = np.array(base_df)
     df_len = df.shape[0]
-    training_data_rate = 0.95
+    training_data_rate = 0.8
     training_index = int(df_len*training_data_rate)
 
-    prediction_X = df[training_index:, :-1]
-    real_Y = df[training_index:, -1]
+    if same_with_training == False:
+        prediction_X = df[training_index:, :-1]
+        real_Y = df[training_index:, -1]
+    else:
+        prediction_X = df[:training_index, :-1]
+        real_Y = df[:training_index, -1]
 
     model = keras.models.load_model("data_file/model_files/"+model_name)
     prediction = model.predict(prediction_X)
@@ -100,7 +117,7 @@ def model_evaluation(model_name):
 
 
 if __name__ == "__main__":
-    model_name = "0924newmodel.h5"
+    model_name = "0930newmodel2.h5"
     # base_file_create()
     model_create(model_name)
     model_evaluation(model_name)

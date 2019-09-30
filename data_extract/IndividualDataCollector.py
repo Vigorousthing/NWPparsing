@@ -71,7 +71,6 @@ class IndividualDataCollector(multiprocessing.Process):
     #         self.df = self.df.append(df)
     #     self.output_container.put(self.df)
 
-
     def extract_value_v2(self, nearest_type=1):
         def base_setting(grid_analyzer):
             nwp_var_index_dic = file.nwp_var_info.set_index("var_abbrev")["index"]

@@ -14,12 +14,12 @@ start_time = time.time()
 
 file_type = LdapsFile
 current_time = "2019-09-10 10"
+time_interval = ["2019-06-01 00", "2019-06-10 23"]
 fold_type = "unis"
 location_points = get_sitelist(MongodbConnector("sites", "sitesList").
                                find_latest())["Coordinates"].get_values().tolist()
 variables = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "UGRD", "VGRD", "HFSFC", "TMP", "SPFH",
              "RH", "DPT", "TCAR", "TCAM", "TMP-SFC"]
-for_vpp_real_query = ""
 
 mongo_connector = MongodbConnector("sites", "production")
 ftp_accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id, CONSTANT.ftp_pw)
@@ -27,7 +27,7 @@ analyzer = NwpGridAnalyzer()
 visualizer = Visualizer()
 container = FilesContainer(file_type, fold_type, location_points, variables)
 
-vpp_real_result = mongo_connector.aggregate(for_vpp_real_query)
+vpp_real_result = mongo_connector.aggregate(vpp_production_query(time_interval))
 prediction_result = create_current_prediction(container, ftp_accessor, analyzer, current_time, "0924newmodel.h5")
 
 

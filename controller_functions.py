@@ -70,3 +70,9 @@ def create_interval_prediction(container, ftp_accessor, time_interval, predictio
         current_time += datetime.timedelta(hours=time_step)
     ftp_accessor.download_files(download_set, container.type.nwp_type)
 
+    current_time = start_time
+    while current_time <= end_time:
+
+        container.generate_base_prediction_files(current_time)
+        download_set.union(set(container.filname_list))
+        current_time += datetime.timedelta(hours=time_step)
