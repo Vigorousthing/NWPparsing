@@ -12,14 +12,16 @@ class DataOrganizer:
 
     def data_collect(self, num_of_indiv_collector):
         for i in range(num_of_indiv_collector):
-            self.individual_collector[i] = IndividualDataCollector(self.grid_analyzer, self.files_container)
+            self.individual_collector[i] = IndividualDataCollector(
+                self.grid_analyzer, self.files_container)
             self.individual_collector[i].start()
         for i in range(num_of_indiv_collector):
             self.individual_collector[i].join()
 
         self.total_df = self.files_container.output_container.get()
         for i in range(1, num_of_indiv_collector):
-            self.total_df = self.total_df.append(self.files_container.output_container.get())
+            self.total_df = self.total_df.append(
+                self.files_container.output_container.get())
 
         # for i in range(num_of_indiv_collector):
         #     self.individual_collector[i].close()

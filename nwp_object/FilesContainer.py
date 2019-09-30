@@ -18,7 +18,6 @@ class FilesContainer:
 
         self.container = multiprocessing.Manager().Queue()
         self.output_container = multiprocessing.Manager().Queue()
-
         self.filename_list = []
 
     def generate_base_files(self, time_interval):
@@ -28,7 +27,9 @@ class FilesContainer:
             date_string = re.sub('[^A-Za-z0-9]+', '', str(current_time))[:-4]
             for horizon in range(self.type.full_horizon + 1):
                 if horizon % self.type.prediction_interval == 0:
-                    file_object = self.type(self.fold_type, horizon, date_string, self.location_points, self.variables)
+                    file_object = self.type(self.fold_type, horizon,
+                                            date_string, self.location_points,
+                                            self.variables)
                     self.container.put(file_object)
                     self.filename_list.append(file_object.name)
             current_time = current_time + datetime.timedelta(hours=6)
@@ -40,13 +41,15 @@ class FilesContainer:
                        - datetime.timedelta(hours=9)
 
         dif_from_last_prediction = current_time.hour % 6
-        prediction_start = current_time - datetime.timedelta(hours=dif_from_last_prediction)
+        prediction_start = current_time - \
+                           datetime.timedelta(hours=dif_from_last_prediction)
         new_horizon = self.type.full_horizon - dif_from_last_prediction
 
         date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
         for horizon in range(new_horizon + 1):
             if horizon % self.type.prediction_interval == 0:
-                file_object = self.type(self.fold_type, horizon + dif_from_last_prediction,
+                file_object = self.type(self.fold_type,
+                                        horizon + dif_from_last_prediction,
                                         date_string, self.location_points,
                                         self.variables)
                 self.container.put(file_object)
@@ -55,10 +58,13 @@ class FilesContainer:
 
     @staticmethod
     def time_alignment(time_interval):
-        start_time = datetime.datetime.strptime(time_interval[0], "%Y-%m-%d %H") - datetime.timedelta(hours=9)
-        end_time = datetime.datetime.strptime(time_interval[1], "%Y-%m-%d %H") - datetime.timedelta(hours=9)
+        start_time = datetime.datetime.strptime(time_interval[0], "%Y-%m-%d %H")\
+                     - datetime.timedelta(hours=9)
+        end_time = datetime.datetime.strptime(time_interval[1], "%Y-%m-%d %H")\
+                   - datetime.timedelta(hours=9)
         if start_time.hour % 6 != 0:
-            start_time = start_time + datetime.timedelta(hours=(6 - (start_time.hour % 6)))
+            start_time = start_time + datetime.timedelta(
+                hours=(6 - (start_time.hour % 6)))
         if end_time.hour % 6 != 0:
             end_time = end_time - datetime.timedelta(hours=end_time.hour % 6)
         return start_time, end_time

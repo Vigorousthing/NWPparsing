@@ -10,29 +10,22 @@ from util.Visualizer import Visualizer
 from util.QueueJobProgressIndicator import QueueJobProgressIndicator
 from controller_functions import *
 
-start_time = time.time()
-
 file_type = LdapsFile
 current_time = "2019-09-10 10"
 time_interval = ["2019-06-01 00", "2019-06-10 23"]
 fold_type = "unis"
 location_points = get_sitelist(MongodbConnector("sites", "sitesList").
                                find_latest())["Coordinates"].get_values().tolist()
+# variable collection used as models input should be documented
 variables = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "UGRD", "VGRD", "HFSFC", "TMP", "SPFH",
              "RH", "DPT", "TCAR", "TCAM", "TMP-SFC"]
 
-mongo_connector = MongodbConnector("sites", "production")
-ftp_accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id, CONSTANT.ftp_pw)
-analyzer = NwpGridAnalyzer()
-visualizer = Visualizer()
-container = FilesContainer(file_type, fold_type, location_points, variables)
+controller = Controller(file_type, fold_type, current_time, location_points,
+                        variables)
+df = controller.create_current_predcition("0930newmodel.h5")
 
-vpp_real_result = mongo_connector.aggregate(vpp_production_query(time_interval))
-prediction_result = create_current_prediction(container, ftp_accessor, analyzer, current_time, "0924newmodel.h5")
-
-
-# print(result[["CRTN_TM", "new_horizon", "horizon", "FCST_TM"]])
-
-end_time = time.time()
-print("passed: ", end_time - start_time)
+df.to_excel("/home/jhpark/experiment_files/prediction_exp.xlsx")
+# vpp_real_result = mongo_connector.aggregate(vpp_production_query(time_interval))
+# prediction_result = create_current_prediction(container, ftp_accessor, analyzer,
+#                                               current_time, "0924newmodel.h5")
 
