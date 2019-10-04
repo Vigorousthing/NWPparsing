@@ -13,7 +13,8 @@ class NwpFiles:
     nwp_var_info = None
     converter = InputConverter()
 
-    def __init__(self, fold, horizon, crtn_tm, location_points, variables="all"):
+    def __init__(self, fold, horizon, crtn_tm,
+                 location_points, variables="all"):
         self.name = "{}_{}_h{}.{}.gb2".format(
             self.prefix, fold,
             str(horizon).zfill(3),
@@ -37,8 +38,10 @@ class LdapsFile(NwpFiles):
     info_file_name = CONSTANT.ldaps_variable_index_file_name
     nwp_var_info = pd.read_excel(CONSTANT.setting_file_path+info_file_name)
 
-    def __init__(self, fold, horizon, crtn_tm, location_points, variables="all"):
-        super(LdapsFile, self).__init__(fold, horizon, crtn_tm, location_points, variables)
+    def __init__(self, fold, horizon, crtn_tm,
+                 location_points, variables="all"):
+        super(LdapsFile, self).__init__(fold, horizon, crtn_tm,
+                                        location_points, variables)
 
 
 class RdapsFile(NwpFiles):
@@ -49,8 +52,10 @@ class RdapsFile(NwpFiles):
     info_file_name = CONSTANT.rdaps_variable_index_file_name
     nwp_var_info = pd.read_excel(CONSTANT.setting_file_path+info_file_name)
 
-    def __init__(self, fold, horizon, crtn_tm, location_points, variables="all"):
-        super(RdapsFile, self).__init__(fold, horizon, crtn_tm, location_points, variables)
+    def __init__(self, fold, horizon, crtn_tm,
+                 location_points, variables="all"):
+        super(RdapsFile, self).__init__(fold, horizon, crtn_tm,
+                                        location_points, variables)
 
 
 

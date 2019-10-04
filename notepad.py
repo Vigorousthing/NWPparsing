@@ -1,12 +1,28 @@
-import datetime
-import re
+from data_accessors.FtpAccessor import FtpAccessor
+from nwp_object.FilesContainer import FilesContainer
+from nwp_object.NwpFile import *
+from util.input_converter import *
+import CONSTANT
+import time
 
-time_interval = ["2019-09-10 00", "2019-10-10 03"]
+start = time.time()
+#
+# time_interval = [2019080100, 2019091000]
+# time_interval = InputConverter().time_interval_conversion(time_interval)
+#
+accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
+                                        CONSTANT.ftp_pw)
+# container = FilesContainer(LdapsFile, "unis", [(33.2875, 126.648611)],
+#                            ["NDNSW"])
+# container.generate_base_files(time_interval)
+#
+# filename = "l015_v070_erlo_unis_h002.2019042306.gb2"
+# result = accessor.existence_check(filename)
+# print(result)
 
-start_time = datetime.datetime.strptime(time_interval[0], "%Y-%m-%d %H")
-start_time.strftime("%Y%m%d%H")
+container = FilesContainer(LdapsFile, "unis", [(33.2875, 126.648611)],
+                           ["NDNSW"])
+container.generate_real_time_prediction_files(accessor)
 
-a = datetime.datetime.strftime(start_time, "%Y%m%d%H")
-print(a)
+print(container.filename_list)
 
-print(type(start_time) == datetime.datetime)

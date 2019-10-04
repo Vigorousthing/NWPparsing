@@ -8,6 +8,8 @@ download_path = "/home/jhpark/NWP/"
 setting_file_path = "/home/jhpark/PycharmProjects/NWPparsing/data_file/setting_files/"
 prediction_input_output_path = "/home/jhpark/PycharmProjects/NWPparsing/data_file/prediction_input_output/"
 model_path = "/home/jhpark/PycharmProjects/NWPparsing/data_file/model_files/"
+exp_file_path = "/home/jhpark/data_files/"
+
 ldaps_variable_index_file_name = "LDAPS_variables_index_name.xlsx"
 rdaps_variable_index_file_name = "RDAPS_variables_index_name.xlsx"
 

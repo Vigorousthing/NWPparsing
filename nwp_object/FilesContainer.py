@@ -1,6 +1,5 @@
 import multiprocessing
 import datetime
-import re
 from util.input_converter import InputConverter
 
 
@@ -44,7 +43,7 @@ class FilesContainer:
 
         dif_from_last_prediction = current_time.hour % 6
         prediction_start = current_time - \
-                           datetime.timedelta(hours=dif_from_last_prediction)
+            datetime.timedelta(hours=dif_from_last_prediction)
         new_horizon = self.type.full_horizon - dif_from_last_prediction
 
         # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
@@ -56,7 +55,39 @@ class FilesContainer:
                                         self.variables)
                 self.container.put(file_object)
                 self.filename_list.append(file_object.name)
-        # self.filename_list.append(filename_list)
+
+    def generate_real_time_prediction_files(self, ftp_accessor):
+        # input parameter type can be changed to datetime object
+
+        current_time = datetime.datetime.now() - datetime.timedelta(hours=9)
+        self.filename_list = []
+
+        dif_from_last_prediction = current_time.hour % 6
+        prediction_start = current_time - \
+                           datetime.timedelta(hours=dif_from_last_prediction)
+        new_horizon = self.type.full_horizon - dif_from_last_prediction
+
+        # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
+        for horizon in range(new_horizon + 1):
+            if horizon % self.type.prediction_interval == 0:
+                while True:
+                    file_object = self.type(self.fold_type,
+                                            horizon +
+                                            dif_from_last_prediction,
+                                            prediction_start,
+                                            self.location_points,
+                                            self.variables)
+                    if ftp_accessor.existence_check(file_object.name) is True:
+                        self.container.put(file_object)
+                        self.filename_list.append(file_object.name)
+                        break
+                    elif horizon + dif_from_last_prediction \
+                            > self.type.full_horizon:
+                        print("there is no file for this fcst_tm")
+                        break
+                    else:
+
+                        continue
 
     @staticmethod
     def time_alignment(time_interval):
