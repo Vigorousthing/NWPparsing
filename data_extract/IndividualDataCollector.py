@@ -15,6 +15,8 @@ class IndividualDataCollector(multiprocessing.Process):
         self.output_container = files_container.output_container
 
     def extract_value(self, nearest_type=1):
+        df = None
+
         def base_setting(grid_analyzer):
             nwp_var_index_dic = file.nwp_var_info.set_index("var_abbrev")["index"]
             if grid_analyzer.set_lat_lon_call % 100 == 0:
@@ -23,7 +25,13 @@ class IndividualDataCollector(multiprocessing.Process):
             return nwp_var_index_dic
 
         try:
-            file = self.files_container.get()
+            while True:
+                if not self.files_container.empty():
+                    file = self.files_container.get()
+                    break
+                elif self.files_container.empty():
+                    return
+
             pygrib_file = pygrib.open(os.path.join(CONSTANT.local_path, file.name))
 
             nwp_var_index_dic = base_setting(self.grid_analyzer)
@@ -67,6 +75,7 @@ class IndividualDataCollector(multiprocessing.Process):
 
         except BaseException as e:
             print(e)
+            return
 
         # print(file.name)
         return df
@@ -75,8 +84,13 @@ class IndividualDataCollector(multiprocessing.Process):
         if self.files_container.empty():
             return
         else:
-            self.df = self.extract_value()
+            result_list = []
             while not self.files_container.empty():
-                df = self.extract_value()
-                self.df = self.df.append(df, sort=False)
-            self.output_container.put(self.df)
+                result = self.extract_value()
+                if result is not None:
+                    result_list.append(result)
+
+        df = result_list.pop(0)
+        for result in result_list:
+            df = df.append(result, sort=False)
+        self.output_container.put(df)

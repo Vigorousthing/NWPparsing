@@ -28,7 +28,9 @@ accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
 # print(len(container.filename_list))
 
 
-converter = InputConverter()
+rel = [1,2,3,4,5]
 
-a = converter.current_time_conversion(int("2019071820"))
-print(a)
+rel.pop(0)
+
+for i in rel:
+    print(i)
