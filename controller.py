@@ -75,7 +75,9 @@ class Controller:
         # df.to_excel(
         #     CONSTANT.data_file_path + "temp_file_" + str(i) +
         #     ".xlsx")
+        print("here??")
         self.queue_job_checker.terminate()
+        print("here?")
         return df
 
     def create_current_predcition(self, model_name):

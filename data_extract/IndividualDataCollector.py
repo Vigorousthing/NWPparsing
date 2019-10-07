@@ -15,8 +15,6 @@ class IndividualDataCollector(multiprocessing.Process):
         self.output_container = files_container.output_container
 
     def extract_value(self, nearest_type=1):
-        df = None
-
         def base_setting(grid_analyzer):
             nwp_var_index_dic = file.nwp_var_info.set_index("var_abbrev")["index"]
             if grid_analyzer.set_lat_lon_call % 100 == 0:
@@ -74,16 +72,11 @@ class IndividualDataCollector(multiprocessing.Process):
         return df
 
     def run(self):
-        self.df = self.extract_value()
-        while not self.files_container.empty():
-            df = self.extract_value()
-            self.df = self.df.append(df, sort=False)
-        self.output_container.put(self.df)
-
-
-import unittest
-
-
-if __name__ == "__main__":
-    unittest.main()
-
+        if self.files_container.empty():
+            return
+        else:
+            self.df = self.extract_value()
+            while not self.files_container.empty():
+                df = self.extract_value()
+                self.df = self.df.append(df, sort=False)
+            self.output_container.put(self.df)

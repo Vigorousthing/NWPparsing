@@ -46,5 +46,5 @@ mongodb_pw = ""
 mongodb_port = 27017
 
 # job control parameter
-num_of_process = 3
+num_of_process = 10
 length_of_time_interval_for_training = 7
