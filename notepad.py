@@ -25,4 +25,5 @@ container = FilesContainer(LdapsFile, "unis", [(33.2875, 126.648611)],
 container.generate_real_time_prediction_files(accessor)
 
 print(container.filename_list)
+print(len(container.filename_list))
 

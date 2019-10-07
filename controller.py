@@ -1,7 +1,3 @@
-import CONSTANT
-from data_extract.DataOrganizer import DataOrganizer
-from util.QueueJobProgressIndicator import QueueJobProgressIndicator
-from nwp_object.NwpFile import LdapsFile
 from nwp_object.FilesContainer import FilesContainer
 from data_extract.DataOrganizer import DataOrganizer
 from data_accessors.FtpAccessor import FtpAccessor
@@ -29,18 +25,16 @@ class Controller:
         self.visualizer = Visualizer()
         self.container = FilesContainer(file_type, fold_type,
                                         location, variables)
-        self.queuejobchecker = QueueJobProgressIndicator(
-            self.container.container)
         self.input_converter = InputConverter()
+        self.queue_job_checker = None
 
         self.master = DataOrganizer(self.analyzer, self.container)
 
-    def create_training_df(self, filename):
+    def create_training_df(self, save_df_name):
         df = None
         converted_interval = self.input_converter.time_interval_conversion(
             self.time_info)
         time_interval_list = self.split_time(converted_interval)
-        print(time_interval_list)
 
         for i, time_interval in enumerate(time_interval_list):
             self.container.generate_base_files(time_interval)
@@ -49,7 +43,9 @@ class Controller:
                 self.ftp_accessor.reconnect()
             self.ftp_accessor.download_files(filename_list,
                                              self.container.type.nwp_type)
-            self.queuejobchecker.start()
+            self.queue_job_checker = QueueJobProgressIndicator(
+                self.container.container)
+            self.queue_job_checker.start()
             start = time.time()
             temp_df = self.master.data_collect(CONSTANT.num_of_process)
             temp_df.to_excel(
@@ -62,9 +58,11 @@ class Controller:
 
             end = time.time()
             self.ftp_accessor.remove_from_local_pc(filename_list)
+            self.container.initialize_filename_list()
             print("passed in {}th iteration : ".format(i), end - start)
-            self.queuejobchecker.terminate()
-        df.to_excel("/home/jhpark/experiment_files/{}.xlsx".format(filename))
+            self.queue_job_checker.terminate()
+        df.to_excel("/home/jhpark/experiment_files/{}.xlsx".
+                    format(save_df_name))
 
     def create_current_predcition(self, model_name):
         current_time = self.input_converter.current_time_conversion(

@@ -18,14 +18,10 @@ class DataOrganizer:
         for i in range(num_of_indiv_collector):
             self.individual_collector[i].join()
 
+        # change to while not empty
         self.total_df = self.files_container.output_container.get()
         for i in range(1, num_of_indiv_collector):
             self.total_df = self.total_df.append(
-                self.files_container.output_container.get())
+                self.files_container.output_container.get(), sort=False)
 
-        # for i in range(num_of_indiv_collector):
-        #     self.individual_collector[i].close()
-        # self.total_df = self.individual_collector[0].df
-        # for i in range(1, num_of_indiv_collector):
-        #     self.total_df = self.total_df.append(self.individual_collector[i].df)
         return self.total_df

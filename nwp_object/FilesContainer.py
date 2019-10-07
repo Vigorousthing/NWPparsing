@@ -70,11 +70,12 @@ class FilesContainer:
         # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
         for horizon in range(new_horizon + 1):
             if horizon % self.type.prediction_interval == 0:
+                temp_prediction_start = prediction_start
                 while True:
                     file_object = self.type(self.fold_type,
                                             horizon +
                                             dif_from_last_prediction,
-                                            prediction_start,
+                                            temp_prediction_start,
                                             self.location_points,
                                             self.variables)
                     if ftp_accessor.existence_check(file_object.name) is True:
@@ -86,8 +87,12 @@ class FilesContainer:
                         print("there is no file for this fcst_tm")
                         break
                     else:
-
+                        temp_prediction_start -= datetime.timedelta(hours=6)
+                        horizon += 6
                         continue
+
+    def initialize_filename_list(self):
+        self.filename_list = []
 
     @staticmethod
     def time_alignment(time_interval):
