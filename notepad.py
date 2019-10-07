@@ -20,10 +20,15 @@ accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
 # result = accessor.existence_check(filename)
 # print(result)
 
-container = FilesContainer(LdapsFile, "unis", [(33.2875, 126.648611)],
-                           ["NDNSW"])
-container.generate_real_time_prediction_files(accessor)
+# container = FilesContainer(LdapsFile, "unis", [(33.2875, 126.648611)],
+#                            ["NDNSW"])
+# container.generate_real_time_prediction_files(accessor)
+#
+# print(container.filename_list)
+# print(len(container.filename_list))
 
-print(container.filename_list)
-print(len(container.filename_list))
 
+converter = InputConverter()
+
+a = converter.current_time_conversion(int("2019071820"))
+print(a)

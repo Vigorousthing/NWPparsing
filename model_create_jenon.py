@@ -66,7 +66,7 @@ def evaluation(prediction, real):
 
 
 def base_setting(base_filename, training_rate, site):
-    base_df = pd.read_excel(CONSTANT.exp_file_path + base_filename)
+    base_df = pd.read_excel(CONSTANT.data_file_path + base_filename)
     if site == None:
         pass
     else:

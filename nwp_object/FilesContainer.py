@@ -1,3 +1,4 @@
+import os
 import multiprocessing
 import datetime
 from util.input_converter import InputConverter
@@ -90,6 +91,21 @@ class FilesContainer:
                         temp_prediction_start -= datetime.timedelta(hours=6)
                         horizon += 6
                         continue
+
+    def create_training_data_files_from_directory(self, path):
+        path_list = os.listdir(path)
+        dot_idx = path_list[0].index(".")
+
+        for path in path_list:
+            current_time = self.converter.current_time_conversion(
+                int(path[dot_idx+1: -4]))
+            horizon = int(path[dot_idx-2:dot_idx])
+
+            file_object = self.type(self.fold_type, horizon,
+                                    current_time, self.location_points,
+                                    self.variables)
+            self.container.put(file_object)
+            self.filename_list.append(file_object.name)
 
     def initialize_filename_list(self):
         self.filename_list = []

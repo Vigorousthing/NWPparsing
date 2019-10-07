@@ -6,7 +6,7 @@ import CONSTANT
 column = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "UGRD", "VGRD", "HFSFC",
              "TMP", "SPFH", "RH", "DPT", "TCAR", "TCAM", "TMP-SFC", "real"]
 
-df = pd.read_excel(CONSTANT.exp_file_path + "nonje_with_real_base.xlsx")
+df = pd.read_excel(CONSTANT.data_file_path + "nonje_with_real_base.xlsx")
 df = df.drop(columns=["Coordinates", "CRTN_TM", "FCST_TM", "horizon", "site"])
 
 visualizer = Visualizer()

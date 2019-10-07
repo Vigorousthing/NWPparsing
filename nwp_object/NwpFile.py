@@ -1,3 +1,4 @@
+import os
 import CONSTANT
 import datetime
 import pandas as pd
@@ -36,7 +37,8 @@ class LdapsFile(NwpFiles):
     nwp_type = "LDAPS"
     prefix = "l015_v070_erlo"
     info_file_name = CONSTANT.ldaps_variable_index_file_name
-    nwp_var_info = pd.read_excel(CONSTANT.setting_file_path+info_file_name)
+    nwp_var_info = pd.read_excel(
+        os.path.join(CONSTANT.setting_file_path, info_file_name))
 
     def __init__(self, fold, horizon, crtn_tm,
                  location_points, variables="all"):
@@ -50,14 +52,10 @@ class RdapsFile(NwpFiles):
     nwp_type = "RDAPS"
     prefix = "g120_v070_erea"
     info_file_name = CONSTANT.rdaps_variable_index_file_name
-    nwp_var_info = pd.read_excel(CONSTANT.setting_file_path+info_file_name)
+    nwp_var_info = pd.read_excel(
+        os.path.join(CONSTANT.setting_file_path, info_file_name))
 
     def __init__(self, fold, horizon, crtn_tm,
                  location_points, variables="all"):
         super(RdapsFile, self).__init__(fold, horizon, crtn_tm,
                                         location_points, variables)
-
-
-
-
-

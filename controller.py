@@ -38,18 +38,20 @@ class Controller:
 
         for i, time_interval in enumerate(time_interval_list):
             self.container.generate_base_files(time_interval)
+
             filename_list = self.container.filename_list
             if not self.ftp_accessor.check_connection():
                 self.ftp_accessor.reconnect()
             self.ftp_accessor.download_files(filename_list,
                                              self.container.type.nwp_type)
+
             self.queue_job_checker = QueueJobProgressIndicator(
                 self.container.container)
             self.queue_job_checker.start()
             start = time.time()
             temp_df = self.master.data_collect(CONSTANT.num_of_process)
             temp_df.to_excel(
-                "/home/jhpark/experiment_files/" + "temp_file_" + str(i) +
+                CONSTANT.data_file_path + "temp_file_" + str(i) +
                 ".xlsx")
             if i == 0:
                 df = temp_df
@@ -61,8 +63,20 @@ class Controller:
             self.container.initialize_filename_list()
             print("passed in {}th iteration : ".format(i), end - start)
             self.queue_job_checker.terminate()
-        df.to_excel("/home/jhpark/experiment_files/{}.xlsx".
+        df.to_excel(CONSTANT.data_file_path + "{}.xlsx".
                     format(save_df_name))
+
+    def create_training_df_sunghun_test(self, path):
+        self.container.create_training_data_files_from_directory(path)
+        self.queue_job_checker = QueueJobProgressIndicator(
+            self.container.container)
+        self.queue_job_checker.start()
+        df = self.master.data_collect(CONSTANT.num_of_process)
+        # df.to_excel(
+        #     CONSTANT.data_file_path + "temp_file_" + str(i) +
+        #     ".xlsx")
+        self.queue_job_checker.terminate()
+        return df
 
     def create_current_predcition(self, model_name):
         current_time = self.input_converter.current_time_conversion(
