@@ -31,7 +31,6 @@ class IndividualDataCollector(multiprocessing.Process):
                     break
                 elif self.files_container.empty():
                     return
-
             pygrib_file = pygrib.open(os.path.join(CONSTANT.local_path, file.name))
 
             nwp_var_index_dic = base_setting(self.grid_analyzer)
@@ -44,7 +43,10 @@ class IndividualDataCollector(multiprocessing.Process):
             df["CRTN_TM"] = crtn_column
             df["horizon"] = file.horizon
             df["FCST_TM"] = fcst_tm
-            df["Coordinates"] = [point for point in file.location_points]
+            df["lat"] = [point[0] for point in file.location_points]
+            df["lon"] = [point[1] for point in file.location_points]
+            df["location_num"] = [i for i in range(len(file.location_points))]
+            # df["Coordinates"] = [point for point in file.location_points]
 
             if file.variables == "all":
                 file.variables = pd.read_excel(file.info_file_name).set_index(
@@ -77,7 +79,6 @@ class IndividualDataCollector(multiprocessing.Process):
             print(e)
             return
 
-        # print(file.name)
         return df
 
     def run(self):
@@ -90,7 +91,10 @@ class IndividualDataCollector(multiprocessing.Process):
                 if result is not None:
                     result_list.append(result)
 
-        df = result_list.pop(0)
-        for result in result_list:
-            df = df.append(result, sort=False)
-        self.output_container.put(df)
+        if len(result_list) != 0:
+            df = result_list.pop()
+            for result in result_list:
+                df = df.append(result, sort=False)
+            self.output_container.put(df)
+        else:
+            return

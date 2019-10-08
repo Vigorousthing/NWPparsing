@@ -103,6 +103,22 @@ class Controller:
         return self.amend_prediction_df(prediction_df, prediction,
                                         self.time_info)
 
+    def create_realtime_prediction(self, model_name):
+        self.container.generate_real_time_prediction_files(self.ftp_accessor)
+        self.ftp_accessor.download_files(self.container.filename_list,
+                                         self.container.type.nwp_type)
+        df = self.master.data_collect(CONSTANT.num_of_process)
+        if df is None:
+            return "nothing to show. something was gone wrong"
+        input_df = df.drop(columns=["CRTN_TM", "FCST_TM", "lat", "lon"])
+        prediction_df = df.drop(columns=self.container.variables)
+
+        model = keras.models.load_model(CONSTANT.model_path + model_name)
+        prediction = model.predict(np.array(input_df))
+
+        return self.amend_prediction_df(prediction_df, prediction,
+                                        self.time_info)
+
     def amend_prediction_df(self, prediction_df, prediction, current_time):
         prediction_df["CRTN_TM"] = \
             self.input_converter.current_time_conversion(current_time)

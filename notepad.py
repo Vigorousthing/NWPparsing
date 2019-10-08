@@ -28,9 +28,6 @@ accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
 # print(len(container.filename_list))
 
 
-rel = [1,2,3,4,5]
+import datetime
 
-rel.pop(0)
-
-for i in rel:
-    print(i)
+print(datetime.datetime.now())

@@ -39,14 +39,22 @@ def model_evaluation(model_name, base_filename, training_rate, site,
 
 def modelling(training_input, training_real):
     model = keras.Sequential()
-    model.add(keras.layers.Dense(6, input_dim=6, activation="relu"))
+    model.add(keras.layers.Dense(16, input_dim=16, activation="relu"))
+    model.add(keras.layers.Dense(16, activation="relu"))
+    model.add(keras.layers.Dense(16, activation="relu"))
+    model.add(keras.layers.Dense(15, activation="relu"))
+    model.add(keras.layers.Dense(15, activation="relu"))
+    model.add(keras.layers.Dense(15, activation="relu"))
+    model.add(keras.layers.Dense(15, activation="relu"))
+    model.add(keras.layers.Dense(14, activation="relu"))
+    model.add(keras.layers.Dense(14, activation="relu"))
+    model.add(keras.layers.Dense(13, activation="relu"))
+    model.add(keras.layers.Dense(13, activation="relu"))
+    model.add(keras.layers.Dense(12, activation="relu"))
     model.add(keras.layers.Dense(10, activation="relu"))
-    model.add(keras.layers.Dense(10, activation="relu"))
-    model.add(keras.layers.Dense(10, activation="relu"))
-    model.add(keras.layers.Dense(10, activation="relu"))
-    model.add(keras.layers.Dense(10, activation="relu"))
-    model.add(keras.layers.Dense(10, activation="relu"))
-    model.add(keras.layers.Dense(10, activation="relu"))
+    model.add(keras.layers.Dense(8, activation="relu"))
+    model.add(keras.layers.Dense(8, activation="relu"))
+    model.add(keras.layers.Dense(6, activation="relu"))
     model.add(keras.layers.Dense(5, activation="relu"))
     model.add(keras.layers.Dense(1, activation="relu"))
     model.compile(loss="mse", optimizer="adam", metrics=["accuracy"])
@@ -65,7 +73,7 @@ def evaluation(prediction, real):
     return nmape
 
 
-def base_setting(base_filename, training_rate, site):
+def base_setting(base_filename, training_rate, site=None):
     base_df = pd.read_excel(CONSTANT.data_file_path + base_filename)
     if site == None:
         pass
@@ -80,14 +88,14 @@ def base_setting(base_filename, training_rate, site):
 
 training_rate = 0.8
 site = None
-column_idx = 0
-base_filename = "nonje_with_real_base_abb.xlsx"
+column_idx = 4
+base_filename = "nonje_with_real_base.xlsx"
 epoch = 50
 
 
 if __name__ == "__main__":
-    model_name = "1002abbmodel.h5"
+    model_name = "0930newmodel4.h5"
     # base_file_create()
-    model_create(model_name, base_filename, training_rate, site, column_idx)
+    # model_create(model_name, base_filename, training_rate, site, column_idx)
     model_evaluation(model_name, base_filename, training_rate, site,
                      column_idx, same_with_training=False)
