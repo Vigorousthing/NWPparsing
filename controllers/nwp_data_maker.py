@@ -14,22 +14,23 @@ import pandas as pd
 import datetime
 
 
-class Controller:
+class DataMaker:
+    def __init__(self):
+        pass
+
+
+class NwpDataMaker:
     def __init__(self, file_type, fold_type, time_info, location, variables):
         self.time_info = time_info
-
-        self.ftp_accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
-                                        CONSTANT.ftp_pw)
-        self.mongo_connector = MongodbConnector("sites", "production")
 
         self.analyzer = NwpGridAnalyzer()
         self.visualizer = Visualizer()
         self.container = FilesContainer(file_type, fold_type,
                                         location, variables)
         self.input_converter = InputConverter()
-        self.queue_job_checker = None
 
         self.master = DataOrganizer(self.analyzer, self.container)
+
 
     def create_training_df(self, save_df_name):
         df = None
@@ -79,6 +80,7 @@ class Controller:
         self.queue_job_checker.terminate()
         return df
 
+
     def create_current_predcition(self, model_name):
         current_time = self.input_converter.current_time_conversion(
             self.time_info)
@@ -116,9 +118,6 @@ class Controller:
         prediction = model.predict(np.array(input_df))
 
         prediction_df = df.drop(columns=self.container.variables)
-
-        # remove after a prediction is successfully made
-        self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
 
         return self.amend_prediction_df(prediction_df, prediction,
                                         self.time_info)
@@ -176,34 +175,6 @@ class Controller:
         prediction_df["prediction"] = prediction
         return prediction_df
 
-    def create_real_vpp(self, time_interval, plant_id_list):
-        location_num_table = pd.DataFrame(
-            list(zip(plant_id_list, [i for i in range(len(plant_id_list))])),
-            columns=["COMPX_ID", "location_num"])
-
-        mongo_connector = MongodbConnector("sites", "production")
-        mongo_connector2 = MongodbConnector("sites", "sitesList")
-        query = vpp_production_query(time_interval,
-                                     match_plant_subquery(plant_id_list))
-
-        real_df = mongo_connector.aggregate(query)
-        site_info_df = get_sitelist(mongo_connector2.find_latest())
-
-        real_df = real_df.drop(columns=["_id"])
-        site_info_df = site_info_df.rename(columns={"site": "COMPX_ID"})
-        site_info_df = pd.merge(site_info_df, location_num_table, how="left",
-                                on=["COMPX_ID"])
-
-        merged = pd.merge(real_df, site_info_df, how="left", on=["COMPX_ID"])
-        merged = merged.rename(columns={"CRTN_TM": "FCST_TM"})
-        merged = merged.rename(columns={"lng": "lon"})
-
-        return merged
-
-    def create_real_jenon(self, time_interval):
-
-        pass
-
     @staticmethod
     def split_time(converted_time_interval):
         time_interval_list = []
@@ -223,14 +194,3 @@ class Controller:
             time_interval_list.append(temp_list)
             temp_list = []
         return time_interval_list
-
-
-def merge_two_dfs(join_key_list, df1, df2):
-    joined_df = pd.merge(left=df1, right=df2,
-                         how="left", on=join_key_list)
-    joined_df = joined_df.fillna(0)
-    return joined_df
-
-
-
-

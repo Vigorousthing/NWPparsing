@@ -1,11 +1,10 @@
 import os
 
-# paths dependant to local PC
-local_path = "/home/jhpark/NWP/"
-download_path = "/home/jhpark/NWP/"
+# paths dependent to local PC
+files_path = "/home/jhpark/NWP/"
 data_file_path = "/home/jhpark/data_files/"
 
-# paths dependant to the Project
+# paths dependent to the Project
 project_root_dir = os.path.dirname(os.path.abspath(__file__))
 setting_file_path = os.path.join(project_root_dir,
                                  "data_file/setting_files/")

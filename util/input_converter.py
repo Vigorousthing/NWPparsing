@@ -7,6 +7,10 @@ class InputConverter:
     def __init__(self):
         pass
 
+    def convert(self, input):
+
+        pass
+
     @staticmethod
     def time_interval_conversion(time_interval_int_list):
         start_time = datetime.datetime.strptime(str(time_interval_int_list[0]), "%Y%m%d%H")

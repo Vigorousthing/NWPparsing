@@ -24,7 +24,7 @@ class FtpAccessor:
         self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
 
         for i, filename in enumerate(filename_list):
-            path = os.path.join(CONSTANT.download_path, filename)
+            path = os.path.join(CONSTANT.files_path, filename)
             if os.path.exists(path):
                 print(CONSTANT.already_exists_text.format(filename))
                 continue
@@ -75,7 +75,7 @@ class FtpAccessor:
         file_size = 0
         file_num = 0
         for file_name in filename_list:
-            path = os.path.join(CONSTANT.local_path, file_name)
+            path = os.path.join(CONSTANT.files_path, file_name)
             if not os.path.exists(path):
                 try:
                     file_size += self.ftp.size(file_name)
@@ -88,7 +88,7 @@ class FtpAccessor:
 
     def remove_from_local_pc(self, filename_list):
         for filename in filename_list:
-            path = os.path.join(CONSTANT.local_path, filename)
+            path = os.path.join(CONSTANT.files_path, filename)
             if os.path.exists(path):
                 os.remove(path)
             else:

@@ -5,7 +5,7 @@ from nwp_object.NwpFile import *
 # nonsan(yj3-gayagok/yj2-yujin) : (36.149019, 127.176031), capacity : 99.83
 
 file_type = LdapsFile
-time_interval = [2019070100, 2019073123]
+time_interval = [2019060100, 2019060223]
 fold_type = "unis"
 # location_points = [(36.149082, 127.175952)]
 # location_points = [(33.2875, 126.648611), (36.149019, 127.176031)]
@@ -19,6 +19,6 @@ variables = ["NDNSW", "SWDIR", "SWDIF", "TDSWS", "UGRD", "VGRD", "HFSFC",
 start_time = time.time()
 controller = Controller(file_type, fold_type,
                         time_interval, plant_location_list, variables)
-controller.create_training_df("7mvpptraining")
+controller.create_training_df("6m2dtest")
 end_time = time.time()
-print("total time progressed: ", (end_time - start_time)/60)
+print("total time progressed: {} minutes".format((end_time - start_time)/60))

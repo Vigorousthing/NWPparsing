@@ -5,7 +5,6 @@ from util.input_converter import *
 import CONSTANT
 import time
 
-start = time.time()
 #
 # time_interval = [2019080100, 2019091000]
 # time_interval = InputConverter().time_interval_conversion(time_interval)
@@ -26,8 +25,3 @@ accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
 #
 # print(container.filename_list)
 # print(len(container.filename_list))
-
-
-import datetime
-
-print(datetime.datetime.now())

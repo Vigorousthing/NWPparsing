@@ -40,8 +40,6 @@ class FilesContainer:
         # input parameter type can be changed to datetime object
         current_time = self.converter.current_time_conversion(current_time) -\
                        datetime.timedelta(hours=9)
-        self.filename_list = []
-
         dif_from_last_prediction = current_time.hour % 6
         prediction_start = current_time - \
             datetime.timedelta(hours=dif_from_last_prediction)
@@ -107,8 +105,10 @@ class FilesContainer:
             self.container.put(file_object)
             self.filename_list.append(file_object.name)
 
-    def initialize_filename_list(self):
+    def initialize_except_output(self):
         self.filename_list = []
+        while not self.container.empty():
+            self.container.get()
 
     @staticmethod
     def time_alignment(time_interval):

@@ -20,6 +20,9 @@ class MongodbConnector:
     def find_latest(self):
         return self.collection.find().sort([("_id", -1)]).limit(1)
 
+    def close(self):
+        self.conn.close()
+
 
 def get_sitelist(latest_document):
     result = pd.DataFrame(list(latest_document)[0]["sites_list"])

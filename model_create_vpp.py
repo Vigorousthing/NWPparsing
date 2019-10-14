@@ -8,8 +8,6 @@ import CONSTANT
 def create_input():
     time_interval = [2019060100, 2019083123]
     plant_id_list = ["P31S2105", "P31S51157", "P61S2102", "P61S31530", "P41S21482"]
-    plant_location_list = InputConverter().vpp_compx_id_to_coordinates(
-        plant_id_list)
     location_num_table = pd.DataFrame(
         list(zip(plant_id_list, [i for i in range(len(plant_id_list))])),
         columns=["COMPX_ID", "location_num"])
@@ -54,6 +52,6 @@ model_name = "vppmodel.h5"
 
 
 if __name__ == "__main__":
-    model_create(model_name, base_filename, training_rate, site, column_idx)
+    # model_create(model_name, base_filename, training_rate, site, column_idx)
     model_evaluation(model_name, base_filename, training_rate, site,
                      column_idx, same_with_training=False)

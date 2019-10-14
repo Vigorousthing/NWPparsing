@@ -18,7 +18,8 @@ class IndividualDataCollector(multiprocessing.Process):
         df = None
 
         def base_setting(grid_analyzer):
-            nwp_var_index_dic = file.nwp_var_info.set_index("var_abbrev")["index"]
+            nwp_var_index_dic = file.nwp_var_info.set_index(
+                "var_abbrev")["index"]
             if grid_analyzer.set_lat_lon_call % 100 == 0:
                 grid_analyzer.set_lat_lon_grid(
                     pygrib_file[1].latlons()[0], pygrib_file[1].latlons()[1])
@@ -31,8 +32,8 @@ class IndividualDataCollector(multiprocessing.Process):
                     break
                 elif self.files_container.empty():
                     return
-            pygrib_file = pygrib.open(os.path.join(CONSTANT.local_path, file.name))
-
+            pygrib_file = pygrib.open(os.path.join(CONSTANT.files_path,
+                                                   file.name))
             nwp_var_index_dic = base_setting(self.grid_analyzer)
             crtn_tm = file.crtn_tm + datetime.timedelta(hours=9)
             fcst_tm = file.fcst_tm + datetime.timedelta(hours=9)
@@ -91,10 +92,10 @@ class IndividualDataCollector(multiprocessing.Process):
                 if result is not None:
                     result_list.append(result)
 
-        if len(result_list) != 0:
+        if len(result_list) == 0:
+            return
+        else:
             df = result_list.pop()
             for result in result_list:
                 df = df.append(result, sort=False)
             self.output_container.put(df)
-        else:
-            return
