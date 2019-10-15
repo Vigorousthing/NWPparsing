@@ -1,6 +1,7 @@
 from controller import *
 from nwp_object.NwpFile import *
 import datetime
+import pymongo
 
 file_type = LdapsFile
 now = datetime.datetime.now()
@@ -18,4 +19,12 @@ df = controller.create_realtime_prediction("vppmodel.h5")
 end_time = time.time()
 
 print(df)
-print("total time progressed: ", (end_time - start_time)/60)
+
+connection = pymongo.MongoClient("mongodb://datanode4:27017")
+sites_db = connection.sites
+fcst_production_keti = sites_db.fcst_production_keti
+fcst_production_keti.insert_many(df.to_dict("records"))
+
+print("total time progressed: ", (end_time - start_time))
+
+
