@@ -1,14 +1,9 @@
-import datetime
 import pandas as pd
-import CONSTANT
+import datetime
 
 
 class InputConverter:
     def __init__(self):
-        pass
-
-    def convert(self, input):
-
         pass
 
     @staticmethod
@@ -28,13 +23,18 @@ class InputConverter:
         return datetime.datetime.strftime(time, "%Y%m%d%H")
 
     @staticmethod
-    def vpp_compx_id_to_coordinates(id_list):
-        info_df = pd.read_excel(CONSTANT.setting_file_path +
-                                "vpp_plant_location_info.xlsx")
-        coordinate_list = []
-        for i in id_list:
-            idx = info_df[info_df["site_id"] == i].index.tolist()[0]
-            row_list = info_df.iloc[idx].tolist()
-            coordinate = (row_list[2], row_list[3])
-            coordinate_list.append(coordinate)
-        return coordinate_list
+    def vpp_compx_id_to_coordinates(id_list, site_info_df):
+        if id_list == "all":
+            return list(site_info_df["Coordinates"])
+        else:
+            site_info_df = site_info_df[site_info_df["site"].isin(id_list)]
+            return list(site_info_df["Coordinates"])
+        # info_df = pd.read_excel(CONSTANT.setting_file_path +
+        #                         "vpp_plant_location_info.xlsx")
+        # coordinate_list = []
+        # for i in id_list:
+        #     idx = info_df[info_df["site_id"] == i].index.tolist()[0]
+        #     row_list = info_df.iloc[idx].tolist()
+        #     coordinate = (row_list[2], row_list[3])
+        #     coordinate_list.append(coordinate)
+        # return coordinate_list

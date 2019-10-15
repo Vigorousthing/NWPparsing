@@ -1,9 +1,7 @@
-import re
 import pymongo
 import CONSTANT
 import datetime
 import pandas as pd
-from pandas.io.json import json_normalize
 from util.input_converter import InputConverter
 
 
@@ -62,3 +60,18 @@ def vpp_production_query(time_interval, add_query=None):
         pipeline_for_real.insert(0, add_query)
     pipeline_for_real.insert(0, first_query)
     return pipeline_for_real
+
+
+def get_site_info_df():
+    mongo_connector = MongodbConnector("sites", "sitesList")
+    info_df = get_sitelist(mongo_connector.find_latest()).rename(
+        columns={"lng": "lon"})
+    info_df["lat"] = pd.to_numeric(info_df["lat"])
+    info_df["lon"] = pd.to_numeric(info_df["lon"])
+    mongo_connector.close()
+    return info_df
+
+
+if __name__ == '__main__':
+    site_info_df = get_site_info_df()
+    print(site_info_df)

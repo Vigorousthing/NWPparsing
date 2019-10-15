@@ -118,10 +118,53 @@ class Controller:
         prediction_df = df.drop(columns=self.container.variables)
 
         # remove after a prediction is successfully made
-        self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
+        # self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
+        result = self.amend_prediction_df(prediction_df, prediction,
+                                          self.time_info)
+        # result = result.rename(columns={"production": "FCST_QGEN"})
+        # result = result.rename(columns={"new_horizon": "LEAD_HR"})
+        result["Coordinates"] = result.apply(
+            lambda row: (float(row.lat), float(row.lon)), axis=1)
 
-        return self.amend_prediction_df(prediction_df, prediction,
-                                        self.time_info)
+        site_info_df = get_site_info_df()
+        # lat_lon_compx_id_table = pd.read_excel(CONSTANT.setting_file_path +
+        #                                        "vpp_plant_location_info.xlsx")
+        # result.to_excel("/home/jhpark/data_files/result.xlsx")
+        # site_info_df.to_excel("/home/jhpark/data_files/site_info.xlsx")
+
+        # result["lat"] = result["lat"].to_string()
+        # result["lon"] = result["lon"].to_string()
+        # site_info_df["lat"] = site_info_df["lat"].to_string()
+        # site_info_df["lon"] = site_info_df["lon"].to_string()
+        # print(result)
+        # print(site_info_df)
+
+        result = pd.merge(result, site_info_df, how="inner",
+                          on=["Coordinates"])
+        result["capacity"] = pd.to_numeric(result["capacity"])
+        result["FCST_QGEN"] = result.apply(
+            lambda row: row.prediction*(row.capacity/99), axis=1)
+        result = result.rename(columns={"site": "COMPX_ID"})
+        result = result.drop(columns=["lat_x", "lat_y", "lon_x", "lon_y",
+                                      "Coordinates", "prediction",
+                                      "location_num"])
+        now_without_min_sec = datetime.datetime.now().replace(minute=0,
+                                                              second=0,
+                                                              microsecond=0)
+        result["FCST_TM"] = result.apply(lambda row: row.FCST_TM.replace(
+            minute=0, second=0, microsecond=0), axis=1)
+        result["CRTN_TM"] = now_without_min_sec
+
+        result["LEAD_HR"] = result.apply(
+            lambda row: int(
+                        (row.FCST_TM - row.CRTN_TM).days * 24 +
+                        (row.FCST_TM - row.CRTN_TM).seconds / 3600
+                        ), axis=1)
+
+        result = result.sort_values(by=["COMPX_ID", "FCST_TM"],
+                                    ascending=True)
+        result.to_excel("/home/jhpark/data_files/result.xlsx")
+        return result
 
     def create_interval_prediction(self, prediction_type, model_name):
         converted_interval = self.input_converter.time_interval_conversion(
@@ -166,13 +209,12 @@ class Controller:
         # prediction_df["CRTN_TM"] = \
         #     self.input_converter.current_time_conversion(current_time)
         prediction_df = prediction_df.drop(columns=["horizon"])
-        prediction_df["new_horizon"] = prediction_df.apply(
-            lambda row: int(
-                        (row.FCST_TM - row.CRTN_TM).days * 24 +
-                        (row.FCST_TM - row.CRTN_TM).seconds / 3600
-                        ),
-                        axis=1)
-
+        # prediction_df["new_horizon"] = prediction_df.apply(
+        #     lambda row: int(
+        #                 (row.FCST_TM - row.CRTN_TM).days * 24 +
+        #                 (row.FCST_TM - row.CRTN_TM).seconds / 3600
+        #                 ),
+        #                 axis=1)
         prediction_df["prediction"] = prediction
         return prediction_df
 

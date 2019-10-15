@@ -2,7 +2,7 @@ import os
 
 # paths dependent to local PC
 files_path = "/home/jhpark/NWP/"
-data_file_path = "/home/jhpark/data_files/"
+data_file_path = "/home/jhpark/data_file/"
 
 # paths dependent to the Project
 project_root_dir = os.path.dirname(os.path.abspath(__file__))
