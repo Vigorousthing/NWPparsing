@@ -118,26 +118,13 @@ class Controller:
         prediction_df = df.drop(columns=self.container.variables)
 
         # remove after a prediction is successfully made
-        # self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
+        self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
         result = self.amend_prediction_df(prediction_df, prediction,
                                           self.time_info)
-        # result = result.rename(columns={"production": "FCST_QGEN"})
-        # result = result.rename(columns={"new_horizon": "LEAD_HR"})
         result["Coordinates"] = result.apply(
             lambda row: (float(row.lat), float(row.lon)), axis=1)
 
         site_info_df = get_site_info_df()
-        # lat_lon_compx_id_table = pd.read_excel(CONSTANT.setting_file_path +
-        #                                        "vpp_plant_location_info.xlsx")
-        # result.to_excel("/home/jhpark/data_files/result.xlsx")
-        # site_info_df.to_excel("/home/jhpark/data_files/site_info.xlsx")
-
-        # result["lat"] = result["lat"].to_string()
-        # result["lon"] = result["lon"].to_string()
-        # site_info_df["lat"] = site_info_df["lat"].to_string()
-        # site_info_df["lon"] = site_info_df["lon"].to_string()
-        # print(result)
-        # print(site_info_df)
 
         result = pd.merge(result, site_info_df, how="inner",
                           on=["Coordinates"])
@@ -163,7 +150,6 @@ class Controller:
 
         result = result.sort_values(by=["COMPX_ID", "FCST_TM"],
                                     ascending=True)
-        result.to_excel("/home/jhpark/data_files/result.xlsx")
         return result
 
     def create_interval_prediction(self, prediction_type, model_name):
