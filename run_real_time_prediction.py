@@ -15,7 +15,6 @@ variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
 start_time = time.time()
 controller = Controller(file_type, fold_type,
                         now, plant_location_list, variables)
-# df = controller.create_realtime_prediction("vppmodel.h5")
 df = controller.create_realtime_prediction("nonje_1016model.h5")
 end_time = time.time()
 
