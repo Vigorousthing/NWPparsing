@@ -108,33 +108,47 @@ class Controller:
         self.container.generate_real_time_prediction_files(self.ftp_accessor)
         self.ftp_accessor.download_files(self.container.filename_list,
                                          self.container.type.nwp_type)
+
+        # 1. extract nwp data - for all site
         df = self.master.data_collect(CONSTANT.num_of_process)
         if df is None:
             return "nothing to show. something was gone wrong"
-        input_df = df.drop(columns=["CRTN_TM", "FCST_TM", "lat", "lon"])
+        # remove after a prediction is successfully made
+        self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
+
+        # 2. make prediction
+        input_df = df.drop(columns=["CRTN_TM", "horizon", "FCST_TM", "lat",
+                                    "lon", "location_num"])
         model = keras.models.load_model(CONSTANT.model_path + model_name)
         prediction = model.predict(np.array(input_df))
 
+        # 3. prepare df only contains crtn_tm, horizon, fcst_tm, etc
+        #    drop horizon column for realtime fcst_tm amendment
         prediction_df = df.drop(columns=self.container.variables)
+        prediction_df = prediction_df.drop(columns=["horizon"])
 
-        # remove after a prediction is successfully made
-        self.ftp_accessor.remove_from_local_pc(self.container.filename_list)
-        result = self.amend_prediction_df(prediction_df, prediction,
-                                          self.time_info)
+        # 4. paste prediction result with result of 3
+        prediction_df["prediction"] = prediction
+        result = prediction_df
+
         result["Coordinates"] = result.apply(
             lambda row: (float(row.lat), float(row.lon)), axis=1)
 
+        # 5. load site_info_df. It contains location, capacity, compx_id of
+        # each plant
         site_info_df = get_site_info_df()
+        site_info_df = site_info_df.sort_values(by=["COMPX_ID"], ascending=True)
 
+        # 6. using info of location of prediction df, add info of
+        # compx_id, capacity to result df by key="location_num"
+        result = result.sort_values(by=["location_num"], ascending=True)
         result = pd.merge(result, site_info_df, how="inner",
-                          on=["Coordinates"])
+                          on=["location_num"])
         result["capacity"] = pd.to_numeric(result["capacity"])
         result["FCST_QGEN"] = result.apply(
             lambda row: row.prediction*(row.capacity/99), axis=1)
         result = result.rename(columns={"site": "COMPX_ID"})
-        result = result.drop(columns=["lat_x", "lat_y", "lon_x", "lon_y",
-                                      "Coordinates", "prediction",
-                                      "location_num"])
+
         now_without_min_sec = datetime.datetime.now().replace(minute=0,
                                                               second=0,
                                                               microsecond=0)
@@ -148,8 +162,11 @@ class Controller:
                         (row.FCST_TM - row.CRTN_TM).seconds / 3600
                         ), axis=1)
 
-        result = result.sort_values(by=["COMPX_ID", "FCST_TM"],
+        result = result.sort_values(by=["location_num", "FCST_TM"],
                                     ascending=True)
+        result = result.drop(columns=["lat_x", "lat_y", "lon_x", "lon_y",
+                                      "Coordinates_x", "Coordinates_y",
+                                      "prediction", "location_num"])
         return result
 
     def create_interval_prediction(self, prediction_type, model_name):

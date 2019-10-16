@@ -25,3 +25,5 @@ accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
 #
 # print(container.filename_list)
 # print(len(container.filename_list))
+
+print(datetime.datetime.now())

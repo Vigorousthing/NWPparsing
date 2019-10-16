@@ -22,13 +22,31 @@ class MongodbConnector:
         self.conn.close()
 
 
+# def get_sitelist(latest_document):
+#     result = pd.DataFrame(list(latest_document)[0]["sites_list"])
+#     result = result.drop(columns=["address", "contract", "facility", "name",
+#                                   "network", "installdoc", "state",
+#                                   "subscription", "updated"])
+#     result["Coordinates"] = result.apply(lambda row: (
+#         float(row.lat), float(row.lng)), axis=1)
+#     return result
+
 def get_sitelist(latest_document):
-    result = pd.DataFrame(list(latest_document)[0]["sites_list"])
-    result = result.drop(columns=["address", "contract", "facility", "name",
-                                  "network", "installdoc", "state",
-                                  "subscription", "updated"])
+    result = pd.DataFrame(list(latest_document)[0]["sitesList"])
+    result = result.drop(columns=["name", "created_at", "id", "hash"])
+    result = list(result["data"])
+    result = pd.DataFrame(result)
+    result = result.drop(columns=["OPER_YN", "endDate", "address2",
+                                  "address1", "TRC_MODE", "postcode",
+                                  "regDate", "CL_EQP_YN", "updDate",
+                                  "INST_AZIMUTH", "OUTPUT_TEMPT_COEF",
+                                  "contact", "INST_ZENITH_ANGLE",
+                                  "areaClass", "LOSS_FACTOR", "startDate",
+                                  "VARI_ZENITH_ANGLE"])
+    result = result.rename(columns={"latitd": "lat", "longtd": "lon",
+                                    "GEN_ID": "COMPX_ID"})
     result["Coordinates"] = result.apply(lambda row: (
-        float(row.lat), float(row.lng)), axis=1)
+        float(row.lat), float(row.lon)), axis=1)
     return result
 
 
@@ -63,13 +81,39 @@ def vpp_production_query(time_interval, add_query=None):
 
 
 def get_site_info_df():
-    mongo_connector = MongodbConnector("sites", "sitesList")
-    info_df = get_sitelist(mongo_connector.find_latest()).rename(
-        columns={"lng": "lon"})
-    info_df["lat"] = pd.to_numeric(info_df["lat"])
-    info_df["lon"] = pd.to_numeric(info_df["lon"])
+    mongo_connector = MongodbConnector("sites", "sitesList_new")
+    latest_document = mongo_connector.find_latest()
+
+    result = pd.DataFrame(list(latest_document)[0]["sitesList"])
+    result = result.drop(columns=["name", "created_at", "id", "hash"])
+    result = list(result["data"])
+    result = pd.DataFrame(result)
+    result = result.drop(columns=["OPER_YN", "endDate", "address2",
+                                  "address1", "TRC_MODE", "postcode",
+                                  "regDate", "CL_EQP_YN", "updDate",
+                                  "INST_AZIMUTH", "OUTPUT_TEMPT_COEF",
+                                  "contact", "INST_ZENITH_ANGLE",
+                                  "areaClass", "LOSS_FACTOR", "startDate",
+                                  "VARI_ZENITH_ANGLE"])
+    result = result.rename(columns={"latitd": "lat", "longtd": "lon",
+                                    "GEN_ID": "COMPX_ID"})
+    result["Coordinates"] = result.apply(lambda row: (
+        float(row.lat), float(row.lon)), axis=1)
+    result["location_num"] = [i for i in range(len(result))]
+
+    result["lat"] = pd.to_numeric(result["lat"])
+    result["lon"] = pd.to_numeric(result["lon"])
     mongo_connector.close()
-    return info_df
+    return result
+
+# def get_site_info_df():
+#     mongo_connector = MongodbConnector("sites", "sitesList")
+#     info_df = get_sitelist(mongo_connector.find_latest()).rename(
+#         columns={"lng": "lon"})
+#     info_df["lat"] = pd.to_numeric(info_df["lat"])
+#     info_df["lon"] = pd.to_numeric(info_df["lon"])
+#     mongo_connector.close()
+#     return info_df
 
 
 if __name__ == '__main__':

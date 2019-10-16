@@ -8,8 +8,10 @@ class InputConverter:
 
     @staticmethod
     def time_interval_conversion(time_interval_int_list):
-        start_time = datetime.datetime.strptime(str(time_interval_int_list[0]), "%Y%m%d%H")
-        end_time = datetime.datetime.strptime(str(time_interval_int_list[1]), "%Y%m%d%H")
+        start_time = datetime.datetime.strptime(
+            str(time_interval_int_list[0]), "%Y%m%d%H")
+        end_time = datetime.datetime.strptime(
+            str(time_interval_int_list[1]), "%Y%m%d%H")
         return [start_time, end_time]
 
     @staticmethod
