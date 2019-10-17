@@ -18,12 +18,19 @@ controller = Controller(file_type, fold_type,
 df = controller.create_realtime_prediction("nonje_1016model.h5")
 end_time = time.time()
 
-print(df)
+prediction_df = df.drop(columns=variables)
+nwp_df = df.drop(columns=["GEN_NAME", "capacity", "FCST_QGEN"])
 
 connection = pymongo.MongoClient("mongodb://datanode4:27017")
+
 sites_db = connection.sites
+kma_db = connection.kma
+
 fcst_production_keti = sites_db.fcst_production_keti
-fcst_production_keti.insert_many(df.to_dict("records"))
+keti_nwp = kma_db.keti_nwp
+
+fcst_production_keti.insert_many(prediction_df.to_dict("records"))
+keti_nwp.insert_many(nwp_df.to_dict("records"))
 
 print("total time progressed: ", (end_time - start_time))
 

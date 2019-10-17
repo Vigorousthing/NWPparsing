@@ -124,7 +124,8 @@ class Controller:
 
         # 3. prepare df only contains crtn_tm, horizon, fcst_tm, etc
         #    drop horizon column for realtime fcst_tm amendment
-        prediction_df = df.drop(columns=self.container.variables)
+        prediction_df = df
+        # prediction_df = df.drop(columns=self.container.variables)
         prediction_df = prediction_df.drop(columns=["horizon"])
 
         # 4. paste prediction result with result of 3

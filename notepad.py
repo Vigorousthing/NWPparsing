@@ -5,12 +5,12 @@ from util.input_converter import *
 import CONSTANT
 import time
 
-#
+
 # time_interval = [2019080100, 2019091000]
 # time_interval = InputConverter().time_interval_conversion(time_interval)
 #
-accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
-                                        CONSTANT.ftp_pw)
+# accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
+#                                         CONSTANT.ftp_pw)
 # container = FilesContainer(LdapsFile, "unis", [(33.2875, 126.648611)],
 #                            ["NDNSW"])
 # container.generate_base_files(time_interval)
@@ -26,4 +26,7 @@ accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
 # print(container.filename_list)
 # print(len(container.filename_list))
 
-print(datetime.datetime.now())
+a = [1,2,3]
+c = a + 4
+print(c)
+
