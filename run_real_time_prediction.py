@@ -32,6 +32,8 @@ keti_nwp = kma_db.keti_nwp
 fcst_production_keti.insert_many(prediction_df.to_dict("records"))
 keti_nwp.insert_many(nwp_df.to_dict("records"))
 
+connection.close()
+
 print("total time progressed: ", (end_time - start_time))
 
 
