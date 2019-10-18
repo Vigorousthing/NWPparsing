@@ -25,8 +25,3 @@ import time
 #
 # print(container.filename_list)
 # print(len(container.filename_list))
-
-a = [1,2,3]
-c = a + 4
-print(c)
-
