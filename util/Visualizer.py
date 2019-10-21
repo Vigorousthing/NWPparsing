@@ -15,6 +15,10 @@ class Visualizer:
         plt.colorbar()
         plt.show()
 
+        corr_with_real = corr_df["real"]
+        print(corr_with_real)
+        return corr_with_real
+
     @staticmethod
     def print_progress(iteration, total, prefix='', suffix='',
                        decimals=1, barLength=100):
@@ -22,7 +26,8 @@ class Visualizer:
         percent = format_str.format(100 * (iteration / float(total)))
         filled_length = int(round(barLength * iteration / float(total)))
         bar = '#' * filled_length + '-' * (barLength - filled_length)
-        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percent, '%', suffix)),
+        sys.stdout.write(
+            '\r%s |%s| %s%s %s' % (prefix, bar, percent, '%', suffix)),
         if iteration == total:
             sys.stdout.write('\n')
             sys.stdout.flush()

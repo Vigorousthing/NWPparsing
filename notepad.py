@@ -25,3 +25,10 @@ import time
 #
 # print(container.filename_list)
 # print(len(container.filename_list))
+
+# import CONSTANT
+# import pandas as pd
+# a = pd.read_excel(CONSTANT.data_file_path + "before_refactor_df.xlsx")
+# b = pd.read_excel(CONSTANT.data_file_path + "after_refactor_df.xlsx")
+# c = a.equals(b)
+# print(c)

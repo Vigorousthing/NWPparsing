@@ -20,7 +20,7 @@ class DataOrganizer:
 
         if self.files_container.output_container.empty():
             return
-        # change to while not empty
+
         df = self.files_container.output_container.get()
         while not self.files_container.output_container.empty():
             df = df.append(self.files_container.output_container.get(),

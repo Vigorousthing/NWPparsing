@@ -1,5 +1,9 @@
 import os
 
+# data manipulation constant
+subtract_for_prediction_df = ["CRTN_TM", "horizon", "FCST_TM", "lat", "lon",
+                              "location_num"]
+
 # paths dependent to local PC
 files_path = "/home/jhpark/NWP/"
 data_file_path = "/home/jhpark/data_files/"
@@ -22,6 +26,7 @@ download_exception_text = "cannot download {} from ftp server " \
                           "because the file does not exists in ftp server"
 already_exists_text = "{} already exists in local pc"
 runtime_error_text = ": Runtime Error Ocurred with file {}"
+ldaps_not_found_text = "there is no file in this fcst_tm, lead_tm is {}"
 
 # ftp info
 ftp_ip = "10.0.0.3"

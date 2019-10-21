@@ -1,4 +1,5 @@
 import os
+import CONSTANT
 import multiprocessing
 import datetime
 from util.input_converter import InputConverter
@@ -83,7 +84,9 @@ class FilesContainer:
                         break
                     elif horizon + dif_from_last_prediction \
                             > self.type.full_horizon:
-                        print("there is no file for this fcst_tm")
+                        # need to be revision
+                        print(CONSTANT.ldaps_not_found_text.format(
+                            horizon - dif_from_last_prediction))
                         break
                     else:
                         temp_prediction_start -= datetime.timedelta(hours=6)
