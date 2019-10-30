@@ -18,8 +18,8 @@ controller = RealTimePredictionMaker(file_type, fold_type,
 df = controller.create_realtime_prediction()
 end_time = time.time()
 
-print(df.dtypes)
-df.to_excel(CONSTANT.data_file_path + "after_refactor_df.xlsx")
+# print(df.dtypes)
+# df.to_excel(CONSTANT.data_file_path + "test_whywhy.xlsx")
 
 # prediction_df = df.drop(columns=variables)
 # nwp_df = df.drop(columns=["GEN_NAME", "capacity", "FCST_QGEN"])

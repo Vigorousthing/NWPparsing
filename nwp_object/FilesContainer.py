@@ -63,12 +63,12 @@ class FilesContainer:
         self.filename_list = []
 
         dif_from_last_prediction = current_time.hour % 6
-        prediction_start = current_time - \
-                           datetime.timedelta(hours=dif_from_last_prediction)
-        new_horizon = self.type.full_horizon - dif_from_last_prediction
+        prediction_start = current_time - datetime.timedelta(
+            hours=dif_from_last_prediction)
+        # new_horizon = self.type.full_horizon - dif_from_last_prediction
 
         # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
-        for horizon in range(new_horizon + 1):
+        for horizon in range(self.type.full_horizon + 1):
             if horizon % self.type.prediction_interval == 0:
                 temp_prediction_start = prediction_start
                 while True:
@@ -84,9 +84,11 @@ class FilesContainer:
                         break
                     elif horizon + dif_from_last_prediction \
                             > self.type.full_horizon:
-                        # need to be revision
                         print(CONSTANT.ldaps_not_found_text.format(
-                            horizon - dif_from_last_prediction))
+                            file_object.fcst_tm + datetime.timedelta(
+                                    hours=9),
+                            self.time_difference_hour(
+                                file_object.fcst_tm, current_time)))
                         break
                     else:
                         temp_prediction_start -= datetime.timedelta(hours=6)
@@ -123,3 +125,7 @@ class FilesContainer:
         if end_time.hour % 6 != 0:
             end_time = end_time - datetime.timedelta(hours=end_time.hour % 6)
         return start_time, end_time
+
+    @staticmethod
+    def time_difference_hour(start, end):
+        return abs(int((end - start).total_seconds()/3600))

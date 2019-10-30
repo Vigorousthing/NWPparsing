@@ -32,3 +32,50 @@ import time
 # b = pd.read_excel(CONSTANT.data_file_path + "after_refactor_df.xlsx")
 # c = a.equals(b)
 # print(c)
+
+
+def decorator(func):
+    print("wow")
+
+    def deco(*args):
+        print(*args)
+
+    # print(func)
+
+    # return deco
+
+
+@decorator
+def original_func(a, b):
+    print("original", a, b)
+
+
+class TestClass:
+    def __init__(self):
+        print("start")
+
+    @classmethod
+    def ab(cls):
+        print("classmethoduse")
+
+
+
+def a(a):
+    print("start")
+
+def b(a):
+    a(a)
+
+def c(a):
+    b(a)
+
+def d(a):
+    c(a)
+
+def e(a):
+    d(a)
+
+def f(a):
+    e(a)
+
+f(1)

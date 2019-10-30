@@ -1,8 +1,10 @@
 from nwp_object.FilesContainer import FilesContainer
 from data_extract.DataOrganizer import DataOrganizer
 from data_accessors.FtpAccessor import FtpAccessor
+from data_accessors.DbConnector import *
 from data_accessors.MongoDbConnector import *
 from util.query_maker import *
+from util.input_converter import *
 from util.NwpGridAnalyzer import NwpGridAnalyzer
 from util.Visualizer import Visualizer
 from util.QueueJobProgressIndicator import QueueJobProgressIndicator
@@ -14,44 +16,72 @@ import pandas as pd
 import datetime
 
 
-class VppDataMaker:
+class VppRealMaker:
     def __init__(self, time_interval, plant_id_list):
         self.plant_id_list = plant_id_list
         self.time_interval = time_interval
 
         self.mongo_connector = MongodbConnector("sites", "production")
-        self.site_info_df = self.site_info_initialize()
+        self.site_info_df = self.siteinfo_with_location_num()
 
-    def create_real_vpp(self):
-        mongo_connector = MongodbConnector("sites", "production")
-        query = vpp_production_query(self.time_interval,
-                                     match_plant_subquery(self.plant_id_list))
+    def query_real_data(self):
+        result = self.mongo_connector.aggregate(
+            vpp_production_query(self.time_interval,
+                                 match_plant_subquery(self.plant_id_list)))
+        result = result.drop(columns=["_id"])
 
-        real_df = mongo_connector.aggregate(query)
-
-        real_df = real_df.drop(columns=["_id"])
-
-        merged = pd.merge(real_df, self.site_info_df, how="left",
+        result = pd.merge(result, self.site_info_df, how="left",
                           on=["COMPX_ID"])
-        merged = merged.rename(columns={"CRTN_TM": "FCST_TM"})
-        merged = merged.rename(columns={"lng": "lon"})
+        result = result.rename(columns={"CRTN_TM": "FCST_TM", "lng": "lon"})
+        return result
 
-        return merged
-
-    def site_info_initialize(self):
-        mongo_connector2 = MongodbConnector("sites", "sitesList")
+    def siteinfo_with_location_num(self):
         location_num_table = pd.DataFrame(
             list(zip(self.plant_id_list, [i for i in range(len(
                 self.plant_id_list))])),
             columns=["COMPX_ID", "location_num"])
-        site_info_df = get_sitelist(mongo_connector2.find_latest())
-        site_info_df = site_info_df.rename(columns={"site": "COMPX_ID"})
-        site_info_df = pd.merge(site_info_df, location_num_table, how="left",
-                                on=["COMPX_ID"])
-        return site_info_df
+        result = pd.merge(location_num_table, get_site_info_df(), how="left",
+                          on=["COMPX_ID"])
+        print(result)
+        return result
 
 
-class JenonDataMaker:
-    def __init__(self):
+class JenonRealMaker:
+    def __init__(self, time_interval):
+        self.time_interval = time_interval
+        self.input_converter = InputConverter()
 
-        pass
+        self.jeju_connector = JejuDbConnector()
+        self.nonsan_connector = NonsanDbConnector()
+
+    def query_real_data(self):
+        time_interval = self.input_converter.date_buffer_for_real_data(
+            self.time_interval)
+        time_interval = self.input_converter.int_date_to_string_date(
+            self.time_interval)
+
+        jeju_real = pd.DataFrame(self.jeju_connector.query(jenon_sql.format(
+            time_interval[0], time_interval[1])))
+        nonsan_real = pd.DataFrame(self.nonsan_connector.query(
+            jenon_sql.format(time_interval[0], time_interval[1])))
+
+        jeju_real = jeju_real.rename(columns={"sum(tbl_inverter_min.KWD)":
+                                                  "production",
+                                              "tbl_inverter_min.recvdate - "
+                                              "INTERVAL 10 MINUTE": "FCST_TM"})
+        jeju_real["location_num"] = 0
+        nonsan_real = nonsan_real.rename(columns={"sum(tbl_inverter_min.KWD)":
+                                                  "production",
+                                              "tbl_inverter_min.recvdate - "
+                                              "INTERVAL 10 MINUTE": "FCST_TM"})
+        nonsan_real["location_num"] = 1
+
+        return jeju_real.append(nonsan_real)
+
+
+if __name__ == '__main__':
+    a = VppRealMaker([2019080100, 2019080323],
+                     ["P31S2105", "P31S51157", "P61S2102"])
+    b = JenonRealMaker([2019080100, 2019080323])
+    df = b.load_real_data()
+    print(df)

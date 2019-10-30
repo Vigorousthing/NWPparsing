@@ -53,7 +53,10 @@ def get_sitelist(latest_document):
 def vpp_production_query(time_interval, add_query=None):
     converter = InputConverter()
 
-    start_time, end_time = converter.time_interval_conversion(time_interval)
+    time_interval = converter.time_interval_conversion(time_interval)
+    time_interval = converter.date_buffer_for_real_data(time_interval)
+    start_time, end_time = time_interval[0], time_interval[1]
+
     start_time = start_time - datetime.timedelta(hours=120)
     end_time = end_time + datetime.timedelta(hours=120)
 
@@ -97,12 +100,12 @@ def get_site_info_df():
                                   "VARI_ZENITH_ANGLE"])
     result = result.rename(columns={"latitd": "lat", "longtd": "lon",
                                     "GEN_ID": "COMPX_ID"})
-    result["Coordinates"] = result.apply(lambda row: (
-        float(row.lat), float(row.lon)), axis=1)
-    result["location_num"] = [i for i in range(len(result))]
-
     result["lat"] = pd.to_numeric(result["lat"])
     result["lon"] = pd.to_numeric(result["lon"])
+    result["Coordinates"] = result.apply(lambda row: (row.lat, row.lon),
+                                         axis=1)
+    # result["location_num"] = [i for i in range(len(result))]
+
     mongo_connector.close()
     return result
 
@@ -116,6 +119,3 @@ def get_site_info_df():
 #     return info_df
 
 
-if __name__ == '__main__':
-    site_info_df = get_site_info_df()
-    print(site_info_df)

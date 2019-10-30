@@ -9,7 +9,7 @@ files_path = "/home/jhpark/NWP/"
 data_file_path = "/home/jhpark/data_files/"
 
 # paths dependent to the Project
-project_root_dir = os.path.dirname(os.path.abspath(__file__))
+project_root_dir = os.path.dirname(__file__)
 setting_file_path = os.path.join(project_root_dir,
                                  "data_file/setting_files/")
 prediction_input_output_path = os.path.join(project_root_dir,
@@ -26,7 +26,8 @@ download_exception_text = "cannot download {} from ftp server " \
                           "because the file does not exists in ftp server"
 already_exists_text = "{} already exists in local pc"
 runtime_error_text = ": Runtime Error Ocurred with file {}"
-ldaps_not_found_text = "there is no file in this fcst_tm, lead_tm is {}"
+ldaps_not_found_text = "cannot predict with ldaps file. fcst_tm: {}, " \
+                       "lead_tm: {}"
 
 # ftp info
 ftp_ip = "10.0.0.3"
@@ -42,6 +43,9 @@ db_id = "wmudb"
 db_pw = "xodidrhkd2020"
 
 db_name = "rtu"
+
+jeju_coodrinate = (33.2875, 126.648611)
+nonsan_coordinate = (36.149019, 127.176031)
 
 # mongo db info
 mongodb_ip = "10.0.1.40"

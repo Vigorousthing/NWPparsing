@@ -2,14 +2,11 @@ from nwp_object.FilesContainer import FilesContainer
 from data_extract.DataOrganizer import DataOrganizer
 from data_accessors.FtpAccessor import FtpAccessor
 from data_accessors.MongoDbConnector import *
-from util.query_maker import *
 from util.NwpGridAnalyzer import NwpGridAnalyzer
 from util.Visualizer import Visualizer
-from util.QueueJobProgressIndicator import QueueJobProgressIndicator
 from util.input_converter import InputConverter
 import keras
 import CONSTANT
-import time
 import numpy as np
 import pandas as pd
 import datetime

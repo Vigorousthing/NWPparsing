@@ -29,14 +29,22 @@ class InputConverter:
         if id_list == "all":
             return list(site_info_df["Coordinates"])
         else:
-            site_info_df = site_info_df[site_info_df["site"].isin(id_list)]
+            site_info_df = site_info_df[site_info_df["COMPX_ID"].isin(
+                id_list)]
             return list(site_info_df["Coordinates"])
-        # info_df = pd.read_excel(CONSTANT.setting_file_path +
-        #                         "vpp_plant_location_info.xlsx")
-        # coordinate_list = []
-        # for i in id_list:
-        #     idx = info_df[info_df["site_id"] == i].index.tolist()[0]
-        #     row_list = info_df.iloc[idx].tolist()
-        #     coordinate = (row_list[2], row_list[3])
-        #     coordinate_list.append(coordinate)
-        # return coordinate_list
+
+    @staticmethod
+    def int_date_to_string_date(time_interval):
+        result = []
+        for i in time_interval:
+            converted = datetime.datetime.strptime(str(i), "%Y%m%d%H")
+            result_string = "{}-{}-{}"
+            result_string = result_string.format(
+                converted.year, converted.month, converted.day)
+            result.append(result_string)
+        return result
+
+    @staticmethod
+    def date_buffer_for_real_data(time_interval):
+        return [time_interval[0] - datetime.timedelta(days=4),
+                time_interval[1] + datetime.timedelta(days=4)]

@@ -66,6 +66,7 @@ class Controller:
             self.queue_job_checker.terminate()
         df.to_excel(CONSTANT.data_file_path + "{}.xlsx".
                     format(save_df_name))
+        return df
 
     def create_training_df_from_files_in_directory(self, path):
         self.container.create_training_data_files_from_directory(path)
