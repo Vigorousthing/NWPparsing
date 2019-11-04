@@ -50,20 +50,5 @@ if __name__ == '__main__':
     prediction_df.to_excel(CONSTANT.data_file_path + "test_1104.xlsx")
     nwp_df.to_excel(CONSTANT.data_file_path + "test_nwp_1104.xlsx")
 
-    connection = pymongo.MongoClient("mongodb://datanode4:27017")
-    sites_db = connection.sites
-    kma_db = connection.kma
-
-    fcst_production_keti = sites_db.fcst_production_keti
-    keti_nwp = kma_db.keti_nwp
-
-    # unified df
-    fcst_production_keti.insert_many(
-        unified_df(ldaps_df, rdaps_df).to_dict("records"))
-
-    # nwp data db. ldaps - variables
-    keti_nwp.insert_many(
-        column_subtract(ldaps_df, ldaps_variables).to_dict("records"))
-
     end_time = time.time()
     print("total time progressed: ", (end_time - start_time))
