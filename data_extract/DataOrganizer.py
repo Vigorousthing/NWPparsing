@@ -27,3 +27,6 @@ class DataOrganizer:
             df = df.append(self.files_container.output_container.get(),
                            sort=False)
         return df
+
+    def reset_container(self, files_container):
+        self.files_container = files_container

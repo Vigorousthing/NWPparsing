@@ -1,19 +1,8 @@
-from nwp_object.FilesContainer import FilesContainer
-from data_extract.DataOrganizer import DataOrganizer
-from data_accessors.FtpAccessor import FtpAccessor
 from data_accessors.DbConnector import *
 from data_accessors.MongoDbConnector import *
 from util.query_maker import *
-from util.input_converter import *
-from util.NwpGridAnalyzer import NwpGridAnalyzer
-from util.Visualizer import Visualizer
-from util.QueueJobProgressIndicator import QueueJobProgressIndicator
 from util.input_converter import InputConverter
-import keras
-import time
-import numpy as np
 import pandas as pd
-import datetime
 
 
 class VppRealMaker:
@@ -55,10 +44,12 @@ class JenonRealMaker:
         self.nonsan_connector = NonsanDbConnector()
 
     def query_real_data(self):
+        time_interval = self.input_converter.time_interval_conversion(
+            self.time_interval)
         time_interval = self.input_converter.date_buffer_for_real_data(
-            self.time_interval)
-        time_interval = self.input_converter.int_date_to_string_date(
-            self.time_interval)
+            time_interval)
+        time_interval = self.input_converter.datetime_to_string_date(
+            time_interval)
 
         jeju_real = pd.DataFrame(self.jeju_connector.query(jenon_sql.format(
             time_interval[0], time_interval[1])))

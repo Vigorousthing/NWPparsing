@@ -1,7 +1,7 @@
 from data_accessors.MongoDbConnector import *
 import time
 from nwp_object.NwpFile import *
-from controllers.prediction_maker import RealTimePredictionMaker
+from controllers.prediction_maker import RealTimePredictionMakerForAllVpp
 
 file_type = LdapsFile
 fold_type = "unis"
@@ -12,13 +12,13 @@ plant_location_list = InputConverter().vpp_compx_id_to_coordinates(
 variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
 
 start_time = time.time()
-controller = RealTimePredictionMaker(file_type, fold_type,
-                                     plant_location_list, variables,
-                                     "nonje_1016model.h5")
+controller = RealTimePredictionMakerForAllVpp(fold_type, plant_location_list,
+                                              variables, "nonje_1016model.h5")
 df = controller.create_realtime_prediction()
 end_time = time.time()
 
-# print(df.dtypes)
+print(df)
+print(df.dtypes)
 # df.to_excel(CONSTANT.data_file_path + "test_whywhy.xlsx")
 
 # prediction_df = df.drop(columns=variables)

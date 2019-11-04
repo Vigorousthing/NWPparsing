@@ -1,4 +1,3 @@
-from controller import *
 from nwp_object.NwpFile import *
 
 # jeju(kyungsu) : (33.2875, 126.648611), capacity : 99
@@ -23,5 +22,3 @@ end_time = time.time()
 print("total time progressed: ", (end_time - start_time)/60)
 
 print(df)
-
-

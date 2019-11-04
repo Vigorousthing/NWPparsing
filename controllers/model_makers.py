@@ -15,18 +15,7 @@ class ModelObject:
         self.model = keras.Sequential()
 
     def eval_model(self):
-        prediction = self.make_prediction(self.eval_input_free)
-        print(prediction)
-        print(self.eval_input_dpnt)
-
-        nape_list = list(np.abs(self.make_prediction(self.eval_input_free) -
-                                self.eval_input_dpnt)/99)
-        num = 0
-        for i in nape_list:
-            num += i
-        nmape = num/len(nape_list)
-        print(nmape)
-        return nmape
+        raise NotImplementedError
 
     def create_new_model(self, model_name, epoch):
         self.split_training_data_for_eval()
@@ -87,8 +76,14 @@ class LdapsModelObject(ModelObject):
         self.output_num = 1
         pass
 
-    def set_training_input(self, *args):
-        pass
+    def eval_model(self):
+        nape_list = list(np.abs(self.make_prediction(self.eval_input_free) -
+                                self.eval_input_dpnt)/99)
+        num = 0
+        for i in nape_list:
+            num += i
+        nmape = num/len(nape_list)
+        return nmape
 
 
 class RdapsModelObject(ModelObject):
@@ -98,17 +93,14 @@ class RdapsModelObject(ModelObject):
 
     def eval_model(self):
         prediction = self.make_prediction(self.eval_input_free)
-        print(prediction)
-        print(self.eval_input_dpnt)
-
-        nape_list = list(np.abs(self.make_prediction(self.eval_input_free) -
-                                self.eval_input_dpnt)/99)
         num = 0
-        for i in nape_list:
-            num += i
-        nmape = num/len(nape_list)
+        for idx, arr in enumerate(self.eval_input_dpnt):
+             for idx2, ele in enumerate(arr):
+                num += abs(ele - prediction[idx][idx2])
+        nmape = num/(99*(3*len(prediction)))
         print(nmape)
         return nmape
+
 
 if __name__ == '__main__':
 

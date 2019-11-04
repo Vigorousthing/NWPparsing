@@ -1,4 +1,3 @@
-import pandas as pd
 import datetime
 
 
@@ -45,6 +44,22 @@ class InputConverter:
         return result
 
     @staticmethod
+    def datetime_to_string_date(time_interval):
+        result = []
+        for i in time_interval:
+            result_string = "{}-{}-{}"
+            result_string = result_string.format(
+                i.year, i.month, i.day)
+            result.append(result_string)
+        return result
+
+    @staticmethod
     def date_buffer_for_real_data(time_interval):
         return [time_interval[0] - datetime.timedelta(days=4),
                 time_interval[1] + datetime.timedelta(days=4)]
+
+
+if __name__ == '__main__':
+    a = datetime.datetime.now()
+    print(type(a))
+

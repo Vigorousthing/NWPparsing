@@ -1,9 +1,12 @@
 from controllers.real_data_maker import *
+from data_accessors.FtpAccessor import *
+from util.QueueJobProgressIndicator import *
+from nwp_object.FilesContainer import *
 from util.Visualizer import Visualizer
 from util.NwpGridAnalyzer import NwpGridAnalyzer
-from model_makers.model_makers import *
+from controllers.model_makers import *
+from data_extract.DataOrganizer import *
 import time
-import CONSTANT
 
 
 class TrainingDataMaker:
@@ -114,7 +117,6 @@ class TrainingDataMaker:
         nwp_df = pd.read_excel(
             CONSTANT.data_file_path + checkpoint_filename + ".xlsx")
         real_df = self.create_real()
-
         input_df = nwp_df[self.variables]
 
         output_list = []
@@ -125,10 +127,13 @@ class TrainingDataMaker:
             temp_list = []
             for i in range(self.file_type.prediction_interval):
                 new_fcst_tm = fcst_tm - datetime.timedelta(
-                    hours=self.file_type.prediction_interval - i + 1)
-                real_val = real_df[(real_df["FCST_TM"] == new_fcst_tm) & (
-                        real_df["location_num"] == location_num)]
-                temp_list.append(real_val.production.values[0])
+                    hours=self.file_type.prediction_interval - i)
+                real_val = real_df[(real_df["FCST_TM"] == new_fcst_tm) &
+                                   (real_df["location_num"] == location_num)]
+                try:
+                    temp_list.append(real_val.production.values[0])
+                except IndexError:
+                    temp_list.append(0)
             output_list.append(temp_list)
         return np.array(input_df), np.array(output_list)
 
@@ -188,18 +193,18 @@ if __name__ == '__main__':
     # maker1 = VppTraining(LdapsFile, "unis",
     #                     [2019102400, 2019102406], ["P31S2105", "P31S51157"],
     #                     ["NDNSW"])
-    maker2 = JenonTraining(RdapsFile, "unis", [2019090100, 2019093023],
+    maker2 = JenonTraining(RdapsFile, "unis", [2019080100, 2019093023],
                            ["NDNSW", "XGWSS", "YGWSS", "LLRIB", "HFSFC",
                             "TMOFS", "SHFO", "SUBS", "TMP", "TMIN",
                             "TMAX", "UCAPE", "UPCIN", "LCDC", "MCDC",
                             "HCDC", "TCAR", "TCAM", "TMP-SFC", "PRES"])
 
     # maker1.create_nwp_checkpoint("ldaps_checkpoint")
-    maker2.create_nwp_checkpoint("rdaps_checkpoint09")
+    # maker2.create_nwp_checkpoint("rdaps_checkpoint09")
 
     # df = maker1.create_training_data_ldaps("ldaps_checkpoint")
-    # lists = maker2.create_training_data_rdaps("rdaps_checkpoint09")
+    lists = maker2.create_training_data_rdaps("rdaps_checkpoint0809")
 
-    # modelob = RdapsModelObject(lists[0], lists[1])
-    # modelob.create_new_model("rdaps.h5", 30)
+    modelob = RdapsModelObject(lists[0], lists[1])
+    modelob.create_new_model("rdaps.h5", 30)
 

@@ -6,9 +6,9 @@ from util.input_converter import InputConverter
 
 
 class FilesContainer:
-    def __init__(self, container_class, fold_type,
+    def __init__(self, file_type, fold_type,
                  location_points, variables="all"):
-        self.type = container_class
+        self.type = file_type
         self.fold_type = fold_type
         self.location_points = location_points
         self.variables = variables
@@ -21,6 +21,7 @@ class FilesContainer:
 
         self.container = multiprocessing.Manager().Queue()
         self.output_container = multiprocessing.Manager().Queue()
+        self.lead_hr_failed = []
         self.filename_list = []
 
     def generate_base_files(self, time_interval):
@@ -69,7 +70,8 @@ class FilesContainer:
 
         # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
         for horizon in range(self.type.full_horizon + 1):
-            if horizon % self.type.prediction_interval == 0:
+            if (horizon + dif_from_last_prediction) % \
+                    self.type.prediction_interval == 0:
                 temp_prediction_start = prediction_start
                 while True:
                     file_object = self.type(self.fold_type,
@@ -78,17 +80,20 @@ class FilesContainer:
                                             temp_prediction_start,
                                             self.location_points,
                                             self.variables)
-                    if ftp_accessor.existence_check(file_object.name) is True:
+                    if ftp_accessor.existence_check(
+                            file_object.name, file_object.nwp_type) is True:
                         self.container.put(file_object)
                         self.filename_list.append(file_object.name)
                         break
                     elif horizon + dif_from_last_prediction \
                             > self.type.full_horizon:
+                        fcst_tm = file_object.fcst_tm + datetime.timedelta(
+                                    hours=9)
+                        lead_hr = self.time_difference_hour(
+                            file_object.fcst_tm, current_time)
+                        self.lead_hr_failed.append(lead_hr)
                         print(CONSTANT.ldaps_not_found_text.format(
-                            file_object.fcst_tm + datetime.timedelta(
-                                    hours=9),
-                            self.time_difference_hour(
-                                file_object.fcst_tm, current_time)))
+                            fcst_tm, lead_hr))
                         break
                     else:
                         temp_prediction_start -= datetime.timedelta(hours=6)

@@ -12,6 +12,7 @@ class IndividualDataCollector(multiprocessing.Process):
         self.df = None
         self.grid_analyzer = grid_analyzer
         self.files_container = files_container.container
+        self.failed_container = files_container.lead_hr_failed
         self.output_container = files_container.output_container
 
     def extract_value(self, nearest_type=1):
@@ -77,6 +78,10 @@ class IndividualDataCollector(multiprocessing.Process):
             pygrib_file.close()
 
         except BaseException as e:
+            lead_hr = abs(int((file.fcst_tm - datetime.datetime.now() -
+                               datetime.timedelta(hours=9)).
+                              total_seconds()/3600))
+            self.failed_container.append(lead_hr)
             print(e)
             return
 

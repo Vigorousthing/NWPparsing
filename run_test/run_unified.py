@@ -1,5 +1,4 @@
 from nwp_object.NwpFile import LdapsFile
-from controller import *
 
 
 '''

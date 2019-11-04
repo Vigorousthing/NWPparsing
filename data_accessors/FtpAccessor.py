@@ -3,6 +3,7 @@ import CONSTANT
 import os
 from util.Visualizer import Visualizer
 from util.input_converter import InputConverter
+from nwp_object.NwpFile import *
 
 
 class FtpAccessor:
@@ -21,6 +22,9 @@ class FtpAccessor:
         self.converter = InputConverter()
 
     def download_files(self, filename_list, file_type):
+        # if self.check_connection() is False:
+        #     self.reconnect()
+
         self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
 
         for i, filename in enumerate(filename_list):
@@ -40,7 +44,7 @@ class FtpAccessor:
             self.visualizer.print_progress(i, len(filename_list),
                                            "Download Progress: ", "Complete",
                                            1, 50)
-        self.ftp.close()
+        self.ftp.quit()
 
     # def existence_check(self, file_type, fold_type, horizon, crtn_tm):
     #     self.converter.current_time_conversion(crtn_tm)
@@ -50,9 +54,14 @@ class FtpAccessor:
     #
     #     return not_found_list
 
-    def existence_check(self, filename):
+    def existence_check(self, filename, nwp_type):
         try:
-            self.ftp.sendcmd("MLST /LDAPS/" + filename)
+            if self.check_connection() is False:
+                self.reconnect()
+            # print("MLST /{}/".format(nwp_type) + filename)
+            self.ftp.sendcmd(
+                "MLST /{}/".format(nwp_type) + filename)
+
             return True
         except ftplib.error_perm:
             return False
