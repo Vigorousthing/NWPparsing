@@ -19,6 +19,8 @@ model_path = os.path.join(project_root_dir, "data_file/model_files/")
 ldaps_variable_index_file_name = "LDAPS_variables_index_name.xlsx"
 rdaps_variable_index_file_name = "RDAPS_variables_index_name.xlsx"
 
+var_by_model_file_name = "var_by_model_info.xlsx"
+
 # messages
 value_extract_exception_text = "cannot extract values from {} " \
                                "because the file does not exists in local pc"

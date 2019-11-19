@@ -33,6 +33,7 @@ class IndividualDataCollector(multiprocessing.Process):
                     break
                 elif self.files_container.empty():
                     return
+
             pygrib_file = pygrib.open(os.path.join(CONSTANT.files_path,
                                                    file.name))
             nwp_var_index_dic = base_setting(self.grid_analyzer)
@@ -78,11 +79,11 @@ class IndividualDataCollector(multiprocessing.Process):
             pygrib_file.close()
 
         except BaseException as e:
+            print(e)
             lead_hr = abs(int((file.fcst_tm - datetime.datetime.now() -
                                datetime.timedelta(hours=9)).
                               total_seconds()/3600))
             self.failed_container.append(lead_hr)
-            print(e)
             return
 
         return df

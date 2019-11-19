@@ -128,29 +128,68 @@ import time
 # print(list(d))
 #
 
-def a():
-    msg = "how"
-    def b():
-        def c():
-            def d():
-                msg = "wow"
-                def e():
-                    def f():
-                        def g():
-                            print(msg)
+# def a():
+#     msg = "how"
+#     def b():
+#         def c():
+#             def d():
+#                 msg = "wow"
+#                 def e():
+#                     def f():
+#                         def g():
+#                             print(msg)
+#
+#                         g()
+#
+#
+# def wow():
+#     print("who")
+#
+#     def how():
+#         print("how")
+#
+#     how()
+#
+#
+#
+# a = [1,2,3,4]
+# print(min(a))
 
-                        g()
+# def outer(a, b):
+#     c = a
+#     d = b
+#     def inner():
+#         return c, d
+#     return inner
+#
+# func = outer(1, 2)
+# func2 = outer(3, 4)
+#
+# print(func())
+# print(func2())
+#
+#
+#
+# import sys
+# from util.input_converter import *
+#
+# sys_arg = sys.argv
+#
+# a = 201911190012
+# current_time = InputConverter().current_time_conversion_12char(a)
+# print(current_time)
 
+import pandas as pd
+import CONSTANT
 
-def wow():
-    print("who")
+a = pd.read_excel(CONSTANT.setting_file_path + "var_by_model_info.xlsx")
+b = a["rdaps.h5"][0].replace(" ", "").split(",")
+# print(list(a[a.model_name == "rdaps.h5"]["var"]))
+c = a["rdaps.h5"]
+print(c)
+print(b)
 
-    def how():
-        print("how")
+print(type(b))
 
-    how()
-
-
-
-a = [1,2,3,4]
-print(min(a))
+for i in b:
+    print(i)

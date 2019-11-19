@@ -8,11 +8,6 @@ plant_id_list = "all"
 plant_location_list = InputConverter().vpp_compx_id_to_coordinates(
     plant_id_list, get_site_info_df())
 
-ldaps_variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
-rdaps_variables = ["NDNSW", "XGWSS", "YGWSS", "LLRIB", "HFSFC", "TMOFS",
-                   "SHFO", "SUBS", "TMP", "TMIN", "TMAX", "UCAPE", "UPCIN",
-                   "LCDC", "MCDC", "HCDC", "TCAR", "TCAM", "TMP-SFC", "PRES"]
-
 ldaps_model_name = "nonje_1016model.h5"
 rdaps_model_name = "rdaps.h5"
 
@@ -37,14 +32,14 @@ if __name__ == '__main__':
     start_time = time.time()
     controller = RealTimePredictionMakerForAllVpp(fold_type,
                                                   plant_location_list,
-                                                  ldaps_variables,
-                                                  rdaps_variables,
                                                   ldaps_model_name,
                                                   rdaps_model_name)
-    ldaps_df, rdaps_df = controller.create_realtime_prediction()
+    ldaps_df, rdaps_df = controller.create_prediction()
 
-    prediction_df = unified_df(
-        ldaps_df, rdaps_df, ldaps_variables, rdaps_variables)
+    prediction_df = unified_df(ldaps_df, rdaps_df,
+                               controller.ldaps_variables,
+                               controller.rdaps_variables)
+
     nwp_df = column_subtract(ldaps_df, ["GEN_NAME", "capacity", "FCST_QGEN"])
 
     connection = pymongo.MongoClient("mongodb://datanode4:27017")

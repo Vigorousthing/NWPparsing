@@ -20,6 +20,12 @@ class InputConverter:
         return datetime.datetime.strptime(str(current_time_int), "%Y%m%d%H")
 
     @staticmethod
+    def current_time_conversion_12char(current_time_int):
+        if type(current_time_int) == datetime.datetime:
+            return current_time_int
+        return datetime.datetime.strptime(str(current_time_int), "%Y%m%d%H%M")
+
+    @staticmethod
     def string_conversion(time):
         return datetime.datetime.strftime(time, "%Y%m%d%H")
 
@@ -58,8 +64,18 @@ class InputConverter:
         return [time_interval[0] - datetime.timedelta(days=4),
                 time_interval[1] + datetime.timedelta(days=4)]
 
+    @staticmethod
+    def convert_to_variable_list(variable, file_type):
+        if variable == "all":
+            path = CONSTANT.setting_file_path + file_type.info_file_name
+            var_list = list(pd.read_excel(path)["var_abbrev"])
+            print(var_list)
+        else:
+            variable = variable
+        return variable
+
 
 if __name__ == '__main__':
-    a = datetime.datetime.now()
-    print(type(a))
-
+    test = InputConverter()
+    from nwp_object.NwpFile import *
+    test.convert_to_variable_list("all", RdapsFile)

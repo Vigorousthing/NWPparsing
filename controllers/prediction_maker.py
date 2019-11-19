@@ -15,16 +15,19 @@ import time
 
 
 class PredictionMaker:
-    def __init__(self, fold_type, location, ldaps_variables, rdaps_variables,
+    def __init__(self, fold_type, location,
                  ldaps_model_name, rdaps_model_name):
         self.input_converter = InputConverter()
         self.analyzer = NwpGridAnalyzer()
         self.visualizer = Visualizer()
 
+        self.ldaps_variables = self.var_from_model_name(ldaps_model_name)
+        self.rdaps_variables = self.var_from_model_name(rdaps_model_name)
+
         self.ldaps_container = FilesContainer(LdapsFile, fold_type,
-                                              location, ldaps_variables)
+                                              location, self.ldaps_variables)
         self.rdaps_container = FilesContainer(RdapsFile, fold_type,
-                                              location, rdaps_variables)
+                                              location, self.rdaps_variables)
         self.ldaps_prediction_model = keras.models.load_model(
             CONSTANT.model_path + ldaps_model_name)
         self.rdaps_prediction_model = keras.models.load_model(
@@ -33,6 +36,9 @@ class PredictionMaker:
         self.ftp_accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
                                         CONSTANT.ftp_pw)
         self.master = DataOrganizer(self.analyzer, self.ldaps_container)
+
+    def create_prediction(self):
+        raise NotImplementedError
 
     def download_and_container_set(self, container):
         raise NotImplementedError
@@ -43,42 +49,37 @@ class PredictionMaker:
     def make_prediction(self, nwp_df, prediction_model):
         raise NotImplementedError
 
-    def make_prediction_df(self, nwp_df, prediction_array):
-        raise NotImplementedError
-
     def merge_with_siteinfo(self, prediction_df):
         raise NotImplementedError
 
+    @staticmethod
+    def var_from_model_name(model_name):
+        df = pd.read_excel(CONSTANT.setting_file_path +
+                           CONSTANT.var_by_model_file_name)
+        return df[model_name][0].replace(" ", "").split(",")
+
 
 class RealTimePredictionMakerForAllVpp(PredictionMaker):
-    def __init__(self, fold_type, location, ldaps_variables, rdaps_variables,
+    def __init__(self, fold_type, location,
                  ldaps_model_name, rdaps_model_name):
         super(RealTimePredictionMakerForAllVpp, self).__init__(
-            fold_type, location, ldaps_variables, rdaps_variables,
-            ldaps_model_name, rdaps_model_name)
+            fold_type, location, ldaps_model_name, rdaps_model_name)
 
-    def create_realtime_prediction(self):
+    def create_prediction(self, remove=True):
         self.download_and_container_set(self.ldaps_container)
-        ldaps_df = self.extract_base_data(self.ldaps_container, remove=True)
+        ldaps_df = self.extract_base_data(self.ldaps_container, remove=remove)
         prediction = self.make_prediction(
             ldaps_df, self.ldaps_prediction_model)
         prediction_df = self.make_prediction_df_ldaps(ldaps_df, prediction)
         ldaps_result = self.prediction_df_pipeline_to_result(prediction_df)
-        # ldaps_result = ldaps_result.drop(
-        #     columns=self.ldaps_container.variables)
 
         self.download_and_container_set(self.rdaps_container)
         self.master.reset_container(self.rdaps_container)
-        rdaps_df = self.extract_base_data(self.rdaps_container, remove=True)
+        rdaps_df = self.extract_base_data(self.rdaps_container, remove=remove)
         prediction = self.make_prediction(
             rdaps_df, self.rdaps_prediction_model)
         prediction_df = self.make_prediction_df_rdaps(rdaps_df, prediction)
         rdaps_result = self.prediction_df_pipeline_to_result(prediction_df)
-        # start_ldaps_failure_lead_hr = \
-        #     min(self.ldaps_container.lead_hr_failed_from_ldaps)
-        # rdaps_result = rdaps_result[
-        #     (rdaps_result.LEAD_HR < 49) &
-        #     (rdaps_result.LEAD_HR >= start_ldaps_failure_lead_hr)]
         rdaps_result = rdaps_result[rdaps_result.LEAD_HR.isin(
             self.ldaps_container.lead_hr_failed)]
         return ldaps_result, rdaps_result
@@ -111,11 +112,13 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
             columns=CONSTANT.subtract_for_prediction_df)
         return prediction_model.predict(np.array(prediction_df))
 
-    def make_prediction_df_ldaps(self, nwp_df, prediction_array):
+    @staticmethod
+    def make_prediction_df_ldaps(nwp_df, prediction_array):
         nwp_df["prediction"] = prediction_array
         return nwp_df
 
-    def make_prediction_df_rdaps(self, nwp_df, prediction_array):
+    @staticmethod
+    def make_prediction_df_rdaps(nwp_df, prediction_array):
         # df = nwp_df.drop(columns=self.rdaps_container.variables)
         df = nwp_df
         df.reset_index(drop=True, inplace=True)
@@ -191,6 +194,21 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
                                       "Coordinates", "prediction", "horizon",
                                       "location_num"])
         return result
+
+
+class TimeDesignatedPredictionMaker(RealTimePredictionMakerForAllVpp):
+    def __init__(self, fold_type, location,
+                 ldaps_model_name, rdaps_model_name, designated_time):
+        super(TimeDesignatedPredictionMaker, self).__init__(fold_type,
+                                                            location,
+                                                            ldaps_model_name,
+                                                            rdaps_model_name)
+        self.designated_time = designated_time
+
+    def download_and_container_set(self, container):
+        container.generate_base_prediction_files(self.designated_time)
+        self.ftp_accessor.download_files(container.filename_list,
+                                         container.type.nwp_type)
 
 
 class GeneralPredictionMaker(PredictionMaker):

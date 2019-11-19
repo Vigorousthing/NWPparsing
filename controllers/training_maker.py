@@ -76,7 +76,8 @@ class TrainingDataMaker:
                 df = df.append(temp_df)
 
             end = time.time()
-            # self.ftp_accessor.remove_from_local_pc(filename_list)
+            self.ftp_accessor.remove_from_local_pc(
+                self.container.filename_list)
             print("passed in {}th iteration : ".format(i), end - start)
             self.queue_job_checker.terminate()
         df.to_excel(CONSTANT.data_file_path + "{}.xlsx".

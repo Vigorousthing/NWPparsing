@@ -22,9 +22,8 @@ class FtpAccessor:
         self.converter = InputConverter()
 
     def download_files(self, filename_list, file_type):
-        # if self.check_connection() is False:
-        #     self.reconnect()
-
+        if self.check_connection() is False:
+            self.reconnect()
         self.ftp.cwd(CONSTANT.ftp_ROOT + file_type)
 
         for i, filename in enumerate(filename_list):
