@@ -30,8 +30,10 @@ def unified_df(ldaps, rdaps, l_var, r_var):
 
 
 if __name__ == '__main__':
+    # current_time = InputConverter().current_time_conversion_12char(
+    #     int(sys.argv[1]))
     current_time = InputConverter().current_time_conversion_12char(
-        int(sys.argv[1]))
+        201911190011)
 
     start_time = time.time()
     controller = TimeDesignatedPredictionMaker(fold_type,
@@ -39,26 +41,26 @@ if __name__ == '__main__':
                                                ldaps_model_name,
                                                rdaps_model_name,
                                                current_time)
-    ldaps_df, rdaps_df = controller.create_prediction(remove=True)
+    ldaps_df, rdaps_df = controller.create_prediction(remove=False)
 
-    prediction_df = unified_df(ldaps_df, rdaps_df,
-                               controller.ldaps_variables,
-                               controller.rdaps_variables)
-
-    nwp_df = column_subtract(ldaps_df, ["GEN_NAME", "capacity", "FCST_QGEN"])
-
-    connection = pymongo.MongoClient("mongodb://datanode4:27017")
-    sites_db = connection.sites
-    kma_db = connection.kma
-
-    fcst_production_keti = sites_db.fcst_production_keti
-    keti_nwp = kma_db.keti_nwp
-
-    # unified df
-    fcst_production_keti.insert_many(prediction_df.to_dict("records"))
-
-    # nwp data db. ldaps - variables
-    keti_nwp.insert_many(nwp_df.to_dict("records"))
-
-    end_time = time.time()
-    print("total time progressed: ", (end_time - start_time))
+    # prediction_df = unified_df(ldaps_df, rdaps_df,
+    #                            controller.ldaps_variables,
+    #                            controller.rdaps_variables)
+    #
+    # nwp_df = column_subtract(ldaps_df, ["GEN_NAME", "capacity", "FCST_QGEN"])
+    #
+    # connection = pymongo.MongoClient("mongodb://datanode4:27017")
+    # sites_db = connection.sites
+    # kma_db = connection.kma
+    #
+    # fcst_production_keti = sites_db.fcst_production_keti
+    # keti_nwp = kma_db.keti_nwp
+    #
+    # # unified df
+    # fcst_production_keti.insert_many(prediction_df.to_dict("records"))
+    #
+    # # nwp data db. ldaps - variables
+    # keti_nwp.insert_many(nwp_df.to_dict("records"))
+    #
+    # end_time = time.time()
+    # print("total time progressed: ", (end_time - start_time))
