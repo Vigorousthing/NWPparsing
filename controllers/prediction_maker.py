@@ -193,6 +193,7 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
         result = result.drop(columns=["lat_x", "lat_y", "lon_x", "lon_y",
                                       "Coordinates", "prediction", "horizon",
                                       "location_num"])
+        result["FCST_QGEN"][result["FCST_QGEN"] < 1] = 0
         return result
 
 
@@ -209,6 +210,18 @@ class TimeDesignatedPredictionMaker(RealTimePredictionMakerForAllVpp):
         container.generate_base_prediction_files(self.designated_time)
         self.ftp_accessor.download_files(container.filename_list,
                                          container.type.nwp_type)
+
+    def amend_time_columns(self, df):
+        df["FCST_TM"] = df.apply(lambda row: row.FCST_TM.replace(
+            minute=0, second=0, microsecond=0), axis=1)
+        df["CRTN_TM"] = self.designated_time.replace(minute=0)
+
+        df["LEAD_HR"] = df.apply(
+            lambda row: int(
+                (row.FCST_TM - row.CRTN_TM).days * 24 +
+                (row.FCST_TM - row.CRTN_TM).seconds / 3600
+            ), axis=1)
+        return df
 
 
 class GeneralPredictionMaker(PredictionMaker):

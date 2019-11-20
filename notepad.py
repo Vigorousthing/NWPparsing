@@ -179,17 +179,19 @@ import time
 # current_time = InputConverter().current_time_conversion_12char(a)
 # print(current_time)
 
-import pandas as pd
-import CONSTANT
+# import pandas as pd
+# import CONSTANT
+#
+# a = pd.read_excel(CONSTANT.setting_file_path + "var_by_model_info.xlsx")
+# b = a["rdaps.h5"][0].replace(" ", "").split(",")
+# # print(list(a[a.model_name == "rdaps.h5"]["var"]))
+# c = a["rdaps.h5"]
+# print(c)
+# print(b)
+#
+# print(type(b))
+#
+# for i in b:
+#     print(i)
 
-a = pd.read_excel(CONSTANT.setting_file_path + "var_by_model_info.xlsx")
-b = a["rdaps.h5"][0].replace(" ", "").split(",")
-# print(list(a[a.model_name == "rdaps.h5"]["var"]))
-c = a["rdaps.h5"]
-print(c)
-print(b)
-
-print(type(b))
-
-for i in b:
-    print(i)
+print(8 % 1)

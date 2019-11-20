@@ -49,7 +49,11 @@ class FilesContainer:
 
         # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
         for horizon in range(new_horizon + 1):
-            if horizon % self.type.prediction_interval == 0:
+            if (horizon + dif_from_last_prediction) % \
+                    self.type.prediction_interval == 0:
+                # why is crtn_tm prediction start? > reflect what is really
+                # done. amend for designated time in prediction_maker
+                # controller
                 file_object = self.type(self.fold_type,
                                         horizon + dif_from_last_prediction,
                                         prediction_start, self.location_points,
@@ -57,8 +61,16 @@ class FilesContainer:
                 self.container.put(file_object)
                 self.filename_list.append(file_object.name)
 
+                if (horizon + dif_from_last_prediction) > \
+                        (self.type.full_horizon - dif_from_last_prediction):
+                    self.lead_hr_failed.append(
+                        horizon + dif_from_last_prediction)
+
+
+
     def generate_real_time_prediction_files(self, ftp_accessor):
         # input parameter type can be changed to datetime object
+        # interval cutting needed for efficiency
 
         current_time = datetime.datetime.now() - datetime.timedelta(hours=9)
         self.filename_list = []
@@ -66,11 +78,13 @@ class FilesContainer:
         dif_from_last_prediction = current_time.hour % 6
         prediction_start = current_time - datetime.timedelta(
             hours=dif_from_last_prediction)
-        # new_horizon = self.type.full_horizon - dif_from_last_prediction
+        new_horizon = self.type.full_horizon - dif_from_last_prediction
 
         # date_string = re.sub('[^A-Za-z0-9]+', '', str(prediction_start))[:-4]
-        for horizon in range(self.type.full_horizon + 1):
-            if (horizon + dif_from_last_prediction) % \
+        for horizon in range(new_horizon + 1):
+            if horizon > CONSTANT.limit_goal_of_prediction_interval + 7:
+                break
+            elif (horizon + dif_from_last_prediction) % \
                     self.type.prediction_interval == 0:
                 temp_prediction_start = prediction_start
                 while True:
@@ -99,6 +113,7 @@ class FilesContainer:
                         temp_prediction_start -= datetime.timedelta(hours=6)
                         horizon += 6
                         continue
+
 
     def create_training_data_files_from_directory(self, path):
         path_list = os.listdir(path)

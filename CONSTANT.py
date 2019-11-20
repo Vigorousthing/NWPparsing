@@ -5,7 +5,8 @@ subtract_for_prediction_df = ["CRTN_TM", "horizon", "FCST_TM", "lat", "lon",
                               "location_num"]
 
 # paths dependent to local PC
-files_path = "/home/jhpark/NWP/"
+
+files_path = "/home/keti/opt_keti/keti-solar-forecast/Seoul_NWPparsing/temp"
 data_file_path = "/home/jhpark/data_files/"
 
 # paths dependent to the Project
@@ -57,3 +58,4 @@ mongodb_port = 27017
 # job control parameter
 num_of_process = 3
 length_of_time_interval_for_training = 7
+limit_goal_of_prediction_interval = 48

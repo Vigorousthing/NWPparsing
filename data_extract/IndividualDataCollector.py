@@ -49,7 +49,6 @@ class IndividualDataCollector(multiprocessing.Process):
             df["lat"] = [point[0] for point in file.location_points]
             df["lon"] = [point[1] for point in file.location_points]
             df["location_num"] = [i for i in range(len(file.location_points))]
-            # df["Coordinates"] = [point for point in file.location_points]
 
             if file.variables == "all":
                 file.variables = pd.read_excel(file.info_file_name).set_index(
