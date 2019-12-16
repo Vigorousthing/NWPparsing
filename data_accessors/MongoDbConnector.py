@@ -84,26 +84,28 @@ def vpp_production_query(time_interval, add_query=None):
 
 
 def get_site_info_df():
+    drop_column_1 = ["name", "created_at", "id", "hash"]
+    drop_column_2 = ["OPER_YN", "endDate", "address2", "address1",
+                     "TRC_MODE", "postcode", "regDate", "CL_EQP_YN",
+                     "updDate", "INST_AZIMUTH", "OUTPUT_TEMPT_COEF",
+                     "contact", "INST_ZENITH_ANGLE", "areaClass",
+                     "LOSS_FACTOR", "startDate", "VARI_ZENITH_ANGLE"]
+
     mongo_connector = MongodbConnector("sites", "sitesList_new")
     latest_document = mongo_connector.find_latest()
 
     result = pd.DataFrame(list(latest_document)[0]["sitesList"])
-    result = result.drop(columns=["name", "created_at", "id", "hash"])
+    result = result.drop(columns=drop_column_1)
     result = list(result["data"])
     result = pd.DataFrame(result)
-    result = result.drop(columns=["OPER_YN", "endDate", "address2",
-                                  "address1", "TRC_MODE", "postcode",
-                                  "regDate", "CL_EQP_YN", "updDate",
-                                  "INST_AZIMUTH", "OUTPUT_TEMPT_COEF",
-                                  "contact", "INST_ZENITH_ANGLE",
-                                  "areaClass", "LOSS_FACTOR", "startDate",
-                                  "VARI_ZENITH_ANGLE"])
+    result = result.drop(columns=drop_column_2)
     result = result.rename(columns={"latitd": "lat", "longtd": "lon",
                                     "GEN_ID": "COMPX_ID"})
     result["lat"] = pd.to_numeric(result["lat"])
     result["lon"] = pd.to_numeric(result["lon"])
     result["Coordinates"] = result.apply(lambda row: (row.lat, row.lon),
                                          axis=1)
+
     # result["location_num"] = [i for i in range(len(result))]
 
     mongo_connector.close()
@@ -119,3 +121,8 @@ def get_site_info_df():
 #     return info_df
 
 
+if __name__ == '__main__':
+    a = get_site_info_df()
+    print(a)
+    # import pandas as pd
+    # a.to_excel("wowow.xlsx")

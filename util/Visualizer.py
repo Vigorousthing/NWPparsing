@@ -31,3 +31,19 @@ class Visualizer:
         if iteration == total:
             sys.stdout.write('\n')
             sys.stdout.flush()
+
+    @staticmethod
+    def plot_some_points(*points_lists, marker_size=1):
+        # print(points_lists[0])
+        # print(points_lists[1])
+
+        color_list = ["red", "blue", "green", "yellow"]
+        for i_1, val_first in enumerate(points_lists):
+            points_list = val_first
+            for i_2, val_second in enumerate(points_list):
+                plt.plot(points_list[i_2][1], points_list[i_2][0],
+                         "ro", color=color_list[i_1],
+                         markersize=marker_size + i_1)
+        # plt.plot(lon_given, lat_given, "ro", color="blue")
+        plt.grid(True)
+        plt.show()

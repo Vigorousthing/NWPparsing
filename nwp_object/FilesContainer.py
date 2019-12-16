@@ -66,13 +66,15 @@ class FilesContainer:
                     self.lead_hr_failed.append(
                         horizon + dif_from_last_prediction)
 
-
-
-    def generate_real_time_prediction_files(self, ftp_accessor):
+    def generate_real_time_prediction_files(self, ftp_accessor, current_time):
         # input parameter type can be changed to datetime object
         # interval cutting needed for efficiency
 
-        current_time = datetime.datetime.now() - datetime.timedelta(hours=9)
+        # modified for vpp prediction timestamp : additional 1hour added
+        # current_time = (datetime.datetime.now() - datetime.timedelta(
+        #     hours=9) + datetime.timedelta(hours=1)).replace(
+        #     minute=0, second=0, microsecond=0)
+        current_time = current_time - datetime.timedelta(hours=9)
         self.filename_list = []
 
         dif_from_last_prediction = current_time.hour % 6
@@ -113,7 +115,6 @@ class FilesContainer:
                         temp_prediction_start -= datetime.timedelta(hours=6)
                         horizon += 6
                         continue
-
 
     def create_training_data_files_from_directory(self, path):
         path_list = os.listdir(path)

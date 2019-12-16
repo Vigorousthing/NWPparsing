@@ -1,0 +1,9 @@
+2019-11-25 10:41:16,757 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:41:16,757 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:07,156 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:07,156 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:20,248 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:20,248 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:34,014 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:34,014 - mylogger.mychildlogger.mygrandchild - DEBUG - 1
+2019-11-25 10:42:34,014 - mylogger - DEBUG - something happend

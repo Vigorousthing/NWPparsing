@@ -31,7 +31,7 @@ class TrainingDataMaker:
 
         self.master = None
 
-    def create_nwp_checkpoint(self, save_df_name):
+    def create_nwp_checkpoint(self, save_df_name, remove=True):
         df = None
         # 1. type conversion : int(ex: 2019101100) to datetime object
         converted_interval = self.input_converter.time_interval_conversion(
@@ -41,6 +41,7 @@ class TrainingDataMaker:
 
         # 2. split time interval for
         time_interval_list = self.split_time(converted_interval)
+        print(time_interval_list)
 
         # 3. loop split time interval
         for i, time_interval in enumerate(time_interval_list):
@@ -67,17 +68,20 @@ class TrainingDataMaker:
 
             # 3-6 extract data for each time interval
             temp_df = self.master.data_collect(CONSTANT.num_of_process)
-            temp_df.to_excel(
-                CONSTANT.data_file_path + "temp_file_" + str(i) +
-                ".xlsx")
+            print(temp_df)
+            print("why is temp_df None??")
+
+            temp_df.to_excel(CONSTANT.data_file_path + "temp_file_" + str(i)
+                             + ".xlsx")
             if i == 0:
                 df = temp_df
             else:
                 df = df.append(temp_df)
 
             end = time.time()
-            self.ftp_accessor.remove_from_local_pc(
-                self.container.filename_list)
+            if remove is True:
+                self.ftp_accessor.remove_from_local_pc(
+                    self.container.filename_list)
             print("passed in {}th iteration : ".format(i), end - start)
             self.queue_job_checker.terminate()
         df.to_excel(CONSTANT.data_file_path + "{}.xlsx".
@@ -112,7 +116,9 @@ class TrainingDataMaker:
                                                             "FCST_TM"])
         result = result.drop(columns=["Unnamed: 0", "lat_x", "lon_x",
                                       "lat_y", "lon_y", "Coordinates"])
-        return np.array(result[self.variables]), result["production"]
+        return result
+
+        # return np.array(result[self.variables]), result["production"]
 
     def create_training_data_rdaps(self, checkpoint_filename):
         nwp_df = pd.read_excel(
@@ -142,20 +148,26 @@ class TrainingDataMaker:
     def split_time(converted_time_interval):
         time_interval_list = []
         start, end = converted_time_interval[0], converted_time_interval[1]
-        temp_list = []
+
         while start <= end:
-            temp_list.append(start)
+            temp_list = [start]
+
             start += datetime.timedelta(days=
                                         CONSTANT.
                                         length_of_time_interval_for_training)
-            start -= datetime.timedelta(hours=1)
+            # start -= datetime.timedelta(hours=1)
+
             if start <= end:
                 temp_list.append(start)
-                start += datetime.timedelta(hours=1)
+                # start += datetime.timedelta(hours=1)
             else:
                 temp_list.append(end)
+
             time_interval_list.append(temp_list)
-            temp_list = []
+
+            if int((end-start).total_seconds()) == 0:
+                break
+
         return time_interval_list
 
 
@@ -191,21 +203,32 @@ class JenonTraining(TrainingDataMaker):
 
 if __name__ == '__main__':
     from nwp_object.NwpFile import *
-    # maker1 = VppTraining(LdapsFile, "unis",
-    #                     [2019102400, 2019102406], ["P31S2105", "P31S51157"],
-    #                     ["NDNSW"])
-    maker2 = JenonTraining(RdapsFile, "unis", [2019080100, 2019093023],
-                           ["NDNSW", "XGWSS", "YGWSS", "LLRIB", "HFSFC",
-                            "TMOFS", "SHFO", "SUBS", "TMP", "TMIN",
-                            "TMAX", "UCAPE", "UPCIN", "LCDC", "MCDC",
-                            "HCDC", "TCAR", "TCAM", "TMP-SFC", "PRES"])
+
+    time_interval = [2019111800, 2019112500]
+    vpp_site_id = ["P31S51040", "P61S31210", "P61S31453", "P61S31550",
+                   "P64S52120"]
+    variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
+
+    maker1 = VppTraining(LdapsFile, "unis", time_interval, vpp_site_id,
+                         variables)
+    # maker1.create_nwp_checkpoint("thridparty_test_nwp1125", remove=False)
+    free_var, dpnt_var = maker1.create_training_data_ldaps(
+        "thridparty_test_nwp1125")
+
+
+
+    # maker2 = JenonTraining(RdapsFile, "unis", [2019080100, 2019093023],
+    #                        ["NDNSW", "XGWSS", "YGWSS", "LLRIB", "HFSFC",
+    #                         "TMOFS", "SHFO", "SUBS", "TMP", "TMIN",
+    #                         "TMAX", "UCAPE", "UPCIN", "LCDC", "MCDC",
+    #                         "HCDC", "TCAR", "TCAM", "TMP-SFC", "PRES"])
 
     # maker1.create_nwp_checkpoint("ldaps_checkpoint")
     # maker2.create_nwp_checkpoint("rdaps_checkpoint09")
 
     # df = maker1.create_training_data_ldaps("ldaps_checkpoint")
-    lists = maker2.create_training_data_rdaps("rdaps_checkpoint0809")
-
-    modelob = RdapsModelObject(lists[0], lists[1])
-    modelob.create_new_model("rdaps.h5", 30)
+    # lists = maker2.create_training_data_rdaps("rdaps_checkpoint0809")
+    #
+    # modelob = RdapsModelObject(lists[0], lists[1])
+    # modelob.create_new_model("rdaps.h5", 30)
 

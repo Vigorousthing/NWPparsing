@@ -1,5 +1,4 @@
 from data_extract.IndividualDataCollector import IndividualDataCollector
-from util.decorator_functions import *
 
 
 class DataOrganizer:

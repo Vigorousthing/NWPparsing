@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ModelObject:
-    def __init__(self, free_var_data, dpnt_var_data):
+    def __init__(self, free_var_data=None, dpnt_var_data=None):
         self.training_input_free = free_var_data
         self.training_input_dpnt = dpnt_var_data
         self.eval_input_free = None
@@ -71,23 +71,22 @@ class ModelObject:
 
 
 class LdapsModelObject(ModelObject):
-    def __init__(self, free_var_data, dpnt_var_data):
+    def __init__(self, free_var_data=None, dpnt_var_data=None):
         super(LdapsModelObject, self).__init__(free_var_data, dpnt_var_data)
         self.output_num = 1
         pass
 
     def eval_model(self):
-        nape_list = list(np.abs(self.make_prediction(self.eval_input_free) -
-                                self.eval_input_dpnt)/99)
         num = 0
-        for i in nape_list:
-            num += i
-        nmape = num/len(nape_list)
+        for i, val in enumerate(self.make_prediction(self.eval_input_free)):
+            num += abs(val[0] - self.eval_input_dpnt[i])/99
+
+        nmape = num/len(self.make_prediction(self.eval_input_free))
         return nmape
 
 
 class RdapsModelObject(ModelObject):
-    def __init__(self, free_var_data, dpnt_var_data):
+    def __init__(self, free_var_data=None, dpnt_var_data=None):
         super(RdapsModelObject, self).__init__(free_var_data, dpnt_var_data)
         self.output_num = 3
 
@@ -98,7 +97,6 @@ class RdapsModelObject(ModelObject):
              for idx2, ele in enumerate(arr):
                 num += abs(ele - prediction[idx][idx2])
         nmape = num/(99*(3*len(prediction)))
-        print(nmape)
         return nmape
 
 

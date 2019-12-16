@@ -194,4 +194,71 @@ import time
 # for i in b:
 #     print(i)
 
-print(8 % 1)
+# class A:
+#     c = 10
+#
+#     def __init__(self, ssn):
+#         self.v1 = 1
+#         self.v2 = 2
+#         self.c += 20
+#
+#     def m1(self):
+#         pass
+#
+#     def m2(self):
+#         pass
+#
+#     @classmethod
+#     def c1(cls):
+#         cls.c += 20
+#         pass
+#
+#
+# import logging
+#
+#
+# mylogger = logging.getLogger("my")
+#
+#
+# mylogger.setLevel(logging.INFO)
+#
+# stream_handler = logging.StreamHandler()
+# mylogger.addHandler(stream_handler)
+# mylogger.info("server start!")
+#
+
+import logging
+import notepad2
+
+
+
+logging.basicConfig(level=logging.CRITICAL, filename="exp.log")
+
+"----------------------"
+logger = logging.getLogger("mylogger")
+logger.setLevel(logging.DEBUG)
+
+loggerchild = logger.getChild("mychildlogger")
+
+print(loggerchild)
+loggergrandchild = loggerchild.getChild("mygrandchild")
+print(loggergrandchild)
+
+fh = logging.FileHandler("tormentalist.log")
+fh.setLevel(logging.DEBUG)
+loggergrandchild.addHandler(fh)
+logger.addHandler(fh)
+
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %("
+                              "message)s")
+fh.setFormatter(formatter)
+
+loggergrandchild.debug("1")
+# loggergrandchild.info("green")
+# loggergrandchild.warning("warn")
+# loggergrandchild.error("error ocurred")
+# logger.critical("omg")
+
+print(logger)
+
+notepad2.log_sth()

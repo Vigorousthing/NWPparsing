@@ -64,6 +64,8 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
                  ldaps_model_name, rdaps_model_name):
         super(RealTimePredictionMakerForAllVpp, self).__init__(
             fold_type, location, ldaps_model_name, rdaps_model_name)
+        self.current_time = datetime.datetime.now().replace(
+            minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
 
     def create_prediction(self, remove=True):
         self.download_and_container_set(self.ldaps_container)
@@ -93,7 +95,7 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
 
     def download_and_container_set(self, container):
         container.generate_real_time_prediction_files(
-            self.ftp_accessor)
+            self.ftp_accessor, self.current_time)
         self.ftp_accessor.download_files(container.filename_list,
                                          container.type.nwp_type)
 
@@ -161,21 +163,11 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
                                  on=["location_num"])
         return prediction_df
 
-    @staticmethod
-    def apply_capacity_to_prediction(df):
-        df["capacity"] = pd.to_numeric(df["capacity"])
-        df["FCST_QGEN"] = df.apply(
-            lambda row: row.prediction * (row.capacity / 99), axis=1)
-        return df
-
-    @staticmethod
-    def amend_time_columns(df):
-        now_without_min_sec = datetime.datetime.now().replace(minute=0,
-                                                              second=0,
-                                                              microsecond=0)
+    def amend_time_columns(self, df):
+        # should be amended
         df["FCST_TM"] = df.apply(lambda row: row.FCST_TM.replace(
             minute=0, second=0, microsecond=0), axis=1)
-        df["CRTN_TM"] = now_without_min_sec
+        df["CRTN_TM"] = self.current_time
 
         df["LEAD_HR"] = df.apply(
             lambda row: int(
@@ -183,6 +175,14 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
                 (row.FCST_TM - row.CRTN_TM).seconds / 3600
             ), axis=1)
         return df
+
+    @staticmethod
+    def apply_capacity_to_prediction(df):
+        df["capacity"] = pd.to_numeric(df["capacity"])
+        df["FCST_QGEN"] = df.apply(
+            lambda row: row.prediction * (row.capacity / 99), axis=1)
+        return df
+
 
     @staticmethod
     def amend_etc(df):

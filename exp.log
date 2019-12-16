@@ -1,0 +1,5 @@
+DEBUG:mylogger.mychildlogger.mygrandchild:1
+DEBUG:mylogger.mychildlogger.mygrandchild:1
+DEBUG:mylogger.mychildlogger.mygrandchild:1
+DEBUG:mylogger.mychildlogger.mygrandchild:1
+DEBUG:mylogger:something happend

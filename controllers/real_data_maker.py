@@ -31,6 +31,7 @@ class VppRealMaker:
             columns=["COMPX_ID", "location_num"])
         result = pd.merge(location_num_table, get_site_info_df(), how="left",
                           on=["COMPX_ID"])
+        print("site_info_of_current_analysis")
         print(result)
         return result
 
