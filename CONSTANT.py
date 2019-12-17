@@ -6,7 +6,7 @@ subtract_for_prediction_df = ["CRTN_TM", "horizon", "FCST_TM", "lat", "lon",
 
 # paths dependent to local PC
 
-files_path = "/home/jhpark/NWP/"
+files_path = "/home/keti/opt_keti/keti-solar-forecast/Seoul_NWPparsing/temp"
 data_file_path = "/home/jhpark/data_files/"
 
 # paths dependent to the Project
