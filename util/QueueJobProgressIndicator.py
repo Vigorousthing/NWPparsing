@@ -12,7 +12,9 @@ class QueueJobProgressIndicator(multiprocessing.Process):
 
     def run(self):
         while not self.container.empty():
-            self.visualizer.print_progress(self.original_qsize - self.container.qsize(), self.original_qsize,
-                                      'Value Extract Progress:',
-                                      'Complete', 1, 50)
+            self.visualizer.print_progress(
+                self.original_qsize - self.container.qsize(),
+                self.original_qsize,
+                'Value Extract Progress:',
+                'Complete', 1, 50)
             time.sleep(3)

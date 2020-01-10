@@ -7,7 +7,11 @@ import pandas as pd
 
 class VppRealMaker:
     def __init__(self, time_interval, plant_id_list):
-        self.plant_id_list = plant_id_list
+        if plant_id_list == "all":
+            self.plant_id_list = get_site_info_df()["COMPX_ID"]
+        else:
+            self.plant_id_list = plant_id_list
+
         self.time_interval = time_interval
 
         self.mongo_connector = MongodbConnector("sites", "production")
@@ -31,8 +35,8 @@ class VppRealMaker:
             columns=["COMPX_ID", "location_num"])
         result = pd.merge(location_num_table, get_site_info_df(), how="left",
                           on=["COMPX_ID"])
-        print("site_info_of_current_analysis")
-        print(result)
+        # print("site_info_of_current_analysis")
+        # print(result)
         return result
 
 
@@ -73,7 +77,8 @@ class JenonRealMaker:
 
 if __name__ == '__main__':
     a = VppRealMaker([2019080100, 2019080323],
-                     ["P31S2105", "P31S51157", "P61S2102"])
-    b = JenonRealMaker([2019080100, 2019080323])
-    df = b.load_real_data()
-    print(df)
+                     "all")
+    # b = JenonRealMaker([2019080100, 2019080323])
+    # df = b.load_real_data()
+    df = a.query_real_data()
+    # print(df)

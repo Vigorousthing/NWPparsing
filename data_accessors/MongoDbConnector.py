@@ -103,11 +103,9 @@ def get_site_info_df():
                                     "GEN_ID": "COMPX_ID"})
     result["lat"] = pd.to_numeric(result["lat"])
     result["lon"] = pd.to_numeric(result["lon"])
-    result["Coordinates"] = result.apply(lambda row: (row.lat, row.lon),
-                                         axis=1)
-
+    result["Coordinates"] = result.apply(
+        lambda row: (row.lat, row.lon), axis=1)
     # result["location_num"] = [i for i in range(len(result))]
-
     mongo_connector.close()
     return result
 
@@ -123,6 +121,6 @@ def get_site_info_df():
 
 if __name__ == '__main__':
     a = get_site_info_df()
-    print(a)
+    print(a[a.capacity == 99])
     # import pandas as pd
     # a.to_excel("wowow.xlsx")

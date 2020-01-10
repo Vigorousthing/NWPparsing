@@ -227,38 +227,59 @@ import time
 # mylogger.info("server start!")
 #
 
-import logging
-import notepad2
+# import logging
+# import notepad2
+#
+#
+#
+# logging.basicConfig(level=logging.CRITICAL, filename="exp.log")
+#
+# "----------------------"
+# logger = logging.getLogger("mylogger")
+# logger.setLevel(logging.DEBUG)
+#
+# loggerchild = logger.getChild("mychildlogger")
+#
+# print(loggerchild)
+# loggergrandchild = loggerchild.getChild("mygrandchild")
+# print(loggergrandchild)
+#
+# fh = logging.FileHandler("tormentalist.log")
+# fh.setLevel(logging.DEBUG)
+# loggergrandchild.addHandler(fh)
+# logger.addHandler(fh)
+#
+# formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %("
+#                               "message)s")
+# fh.setFormatter(formatter)
+#
+# loggergrandchild.debug("1")
+# # loggergrandchild.info("green")
+# # loggergrandchild.warning("warn")
+# # loggergrandchild.error("error ocurred")
+# # logger.critical("omg")
+#
+# print(logger)
+#
+# notepad2.log_sth()
 
+from util.Visualizer import Visualizer
 
+a = Visualizer()
+b = [(37.246238, 127.7247), (37.246268, 127.725193), (37.246432, 127.724826),
+     (37.246545, 127.725303), (37.24672, 127.72493), (37.246754, 127.725389),
+     (37.247061, 127.725099),(37.247154, 127.725493),
+(37.247381, 127.725206),
+(37.247364, 127.725603),
+(37.247233, 127.725866),
+(37.247081, 127.726307),
+(37.24706, 127.72584),
+(37.246857, 127.726213),
+(37.24679, 127.725793),
+(37.246585, 127.726159),
+(37.246512, 127.725751),
+(37.24639, 127.726076),
+(37.246283, 127.725615),
+(37.246108, 127.726017)]
 
-logging.basicConfig(level=logging.CRITICAL, filename="exp.log")
-
-"----------------------"
-logger = logging.getLogger("mylogger")
-logger.setLevel(logging.DEBUG)
-
-loggerchild = logger.getChild("mychildlogger")
-
-print(loggerchild)
-loggergrandchild = loggerchild.getChild("mygrandchild")
-print(loggergrandchild)
-
-fh = logging.FileHandler("tormentalist.log")
-fh.setLevel(logging.DEBUG)
-loggergrandchild.addHandler(fh)
-logger.addHandler(fh)
-
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %("
-                              "message)s")
-fh.setFormatter(formatter)
-
-loggergrandchild.debug("1")
-# loggergrandchild.info("green")
-# loggergrandchild.warning("warn")
-# loggergrandchild.error("error ocurred")
-# logger.critical("omg")
-
-print(logger)
-
-notepad2.log_sth()
+a.plot_some_points(b)

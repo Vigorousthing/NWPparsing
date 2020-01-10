@@ -141,7 +141,7 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
                 new_fcst_tm = df.at[idx, "FCST_TM"] - datetime.timedelta(
                     hours=i + 1)
                 n_row = (crtn_tm, new_horizon, new_fcst_tm, lat, lon,
-                         location_num, prediction_array[idx][1-i])
+                         location_num, prediction_array[idx][1 - i])
                 dic[num] = n_row
                 num += 1
 
@@ -183,7 +183,6 @@ class RealTimePredictionMakerForAllVpp(PredictionMaker):
             lambda row: row.prediction * (row.capacity / 99), axis=1)
         return df
 
-
     @staticmethod
     def amend_etc(df):
         result = df.rename(columns={"site": "COMPX_ID"})
@@ -224,43 +223,60 @@ class TimeDesignatedPredictionMaker(RealTimePredictionMakerForAllVpp):
         return df
 
 
-class GeneralPredictionMaker(PredictionMaker):
-    def __init__(self):
-        super(GeneralPredictionMaker, self).__init__()
+class GeneralPredictionMaker(RealTimePredictionMakerForAllVpp):
+    def __init__(self, fold_type, location, ldaps_model_name,
+                 rdaps_model_name):
+        super(GeneralPredictionMaker, self).__init__(fold_type, location,
+                                                     ldaps_model_name,
+                                                     rdaps_model_name)
 
-    def create_interval_prediction(self, prediction_type, model_name):
-        converted_interval = self.input_converter.time_interval_conversion(
-            self.time_info)
-        start_time, end_time = self.ldaps_container.time_alignment(
-            converted_interval)
+    def create_interval_prediction(self, prediction_type, time_interval):
+        start_time, end_time = self.input_converter.time_interval_conversion(
+            time_interval)
+        time_adjustment = (start_time - datetime.timedelta(hours=9)).hour % 6
+        start_time = start_time - datetime.timedelta(hours=time_adjustment)
+
         current_time = start_time
         if prediction_type == "daily":
             time_step = 24
         else:
             time_step = 6
 
-        # download hole prediction_list
-        download_set = {None}
+        # make whole
         while current_time <= end_time:
             self.ldaps_container.generate_base_prediction_files(current_time)
             current_time += datetime.timedelta(hours=time_step)
 
+        # download whole prediction_list
         download_set = self.ldaps_container.filename_list
         self.ftp_accessor.download_files(download_set,
                                          self.ldaps_container.type.nwp_type)
 
-        #
-        self.ldaps_container.initialize_except_output()
-        current_time = start_time
-        while current_time <= end_time:
-            self.ldaps_container.generate_base_prediction_files(current_time)
-            current_time += datetime.timedelta(hours=time_step)
+        # extract nwp data
+        # self.ldaps_container.initialize_except_output()
         df = self.master.data_collect(CONSTANT.num_of_process)
-
         if df is None:
             return "nothing to show. something was gone wrong"
-        input_df = df.drop(columns=["CRTN_TM", "FCST_TM", "lat", "lon"])
-        model = keras.models.load_model(CONSTANT.model_path + model_name)
-        prediction = model.predict(np.array(input_df))
-        prediction_df = df.drop(columns=self.ldaps_container.variables)
 
+        # while current_time <= end_time:
+        #     self.ldaps_container.generate_base_prediction_files(current_time)
+        #     df = self.master.data_collect(CONSTANT.num_of_process)
+        #
+        #     current_time += datetime.timedelta(hours=time_step)
+        #     self.ldaps_container.initialize_except_output()
+
+        # 1. make prediction  2. prediction df
+        input_df = df.drop(columns=["CRTN_TM", "FCST_TM", "lat", "lon",
+                                    "location_num", "horizon"])
+        prediction = self.ldaps_prediction_model.predict(np.array(input_df))
+        # prediction_df = df.drop(columns=self.ldaps_container.variables)
+        df["prediction"] = prediction
+        return df
+
+    def create_prediction(self, remove=True):
+        self.download_and_container_set(self.ldaps_container)
+        ldaps_df = self.extract_base_data(self.ldaps_container, remove=remove)
+        prediction = self.make_prediction(
+            ldaps_df, self.ldaps_prediction_model)
+        prediction_df = self.make_prediction_df_ldaps(ldaps_df, prediction)
+        return self.prediction_df_pipeline_to_result(prediction_df)
