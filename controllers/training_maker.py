@@ -6,6 +6,7 @@ from util.Visualizer import Visualizer
 from util.NwpGridAnalyzer import NwpGridAnalyzer
 from controllers.model_makers import *
 from data_extract.DataOrganizer import *
+import numpy as np
 import time
 
 
@@ -68,9 +69,6 @@ class TrainingDataMaker:
 
             # 3-6 extract data for each time interval
             temp_df = self.master.data_collect(CONSTANT.num_of_process)
-            print(temp_df)
-            print("why is temp_df None??")
-
             temp_df.to_excel(CONSTANT.data_file_path + "temp_file_" + str(i)
                              + ".xlsx")
             if i == 0:

@@ -3,7 +3,7 @@ from util.input_converter import *
 
 from nwp_object.NwpFile import *
 
-time_interval = [2019111800, 2019112500]
+time_interval = [2019100100, 2019103123]
 # time_interval = [2019111800, 2019112000]
 vpp_site_id = ["P31S51040", "P61S31210", "P61S31453", "P61S31550",
                "P64S52120"]
@@ -13,8 +13,11 @@ variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
 if __name__ == '__main__':
     maker1 = VppTraining(LdapsFile, "unis", time_interval, vpp_site_id,
                          variables)
-    maker1.create_nwp_checkpoint("thridparty_test_nwp1125", remove=False)
-    maker1.create_training_data_ldaps("thridparty_test_nwp1125")
+    start = datetime.datetime.now()
+    maker1.create_nwp_checkpoint("speedtest_from_jhpark", remove=False)
+    # maker1.create_training_data_ldaps("thridparty_test_nwp1125")
+    end = datetime.datetime.now()
+    print(end-start, ": lapsed")
 
 
 # file_type = LdapsFile
