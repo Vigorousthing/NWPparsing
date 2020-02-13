@@ -20,23 +20,22 @@ class GeneralEval:
         raise NotImplementedError
 
     def make_criteria_column_and_groupby_horizon(self):
-        self.merged["rmse"] = (self.merged["production"] - self.merged["prediction"]) ** 2
-        self.merged["mape"] = abs(self.merged["production"] - self.merged["prediction"])
-        self.merged["mbe"] = self.merged["production"] - self.merged["prediction"]
-
+        self.merged["rmse"] = (
+            self.merged["production"] - self.merged["prediction"]) ** 2
+        self.merged["mape"] = abs(
+            self.merged["production"] - self.merged["prediction"])
+        self.merged["mbe"] = self.merged["production"]\
+                             - self.merged["prediction"]
         self.merged = self.merged.groupby(self.merged["horizon"])
         self.merged = self.merged.agg(["count", "mean", "sum"])
 
     def cal_final_criteria(self):
-        self.merged["rRMSE"] = (self.merged["rmse"]["sum"].apply(np.sqrt)) / (self.merged[
-                                                                        "production"][
-                                                                        "mean"] *
-                                                                    self.merged[
-                                                                        "production"][
-                                                                        "count"].apply(
-                                                                        np.sqrt))
-        self.merged["rMBE"] = self.merged["mbe"]["sum"] / (self.merged["production"]["mean"] *
-                                                 self.merged["production"]["count"])
+        self.merged["rRMSE"] = (self.merged["rmse"]["sum"].apply(np.sqrt)) / \
+           (self.merged["production"]["mean"] *
+            self.merged["production"]["count"].apply(np.sqrt))
+        self.merged["rMBE"] = self.merged["mbe"]["sum"] / \
+            (self.merged["production"]["mean"] *
+             self.merged["production"]["count"])
 
     def make_checkpoint(self, checkpoint_filename):
         self.merged.to_excel(CONSTANT.data_file_path + checkpoint_filename)
@@ -93,3 +92,64 @@ class JenonEval(GeneralEval):
         self.merged = pd.merge(
             df, real, how="left", on=["FCST_TM", "location_num"])
         self.merged = self.merged.dropna()
+
+
+class SimpleEval:
+    def __init__(self):
+        self.merged = None
+        self.eval_criteria = ["rmse", "nrmse", "mae", "nmae", "mbe", "nmbe",
+                              "mape", "nmape"]
+
+    def set_through_file(self, filename):
+        self.merged = pd.read_excel(CONSTANT.data_file_path + filename)
+
+    def set_through_files(self, nwp_filename, real_filename):
+        nwp_df = pd.read_excel(CONSTANT.data_file_path + nwp_filename)
+        real_df = pd.read_excel(CONSTANT.data_file_path + real_filename)
+        self.merged = pd.merge(
+            nwp_df, real_df, how="left", on=["FCST_TM", "location_num"])
+        self.merged = self.merged.dropna()
+
+    def eval(self):
+        self.merged["dif"] = self.merged["production"] - \
+                             self.merged["prediction"]
+        self.merged["dif_abs"] = abs(self.merged["dif"])
+        self.merged["dif_sqr"] = self.merged["dif"] ** 2
+
+        self.merged["real_variance"] = np.square(
+            self.merged["production"] - np.mean(self.merged["production"]))
+
+        self.merged["dif_div_capa_sqr"] = \
+            ((self.merged["production"] - self.merged["prediction"]) /
+             self.merged["capacity"]) ** 2
+        self.merged["dif_div_real_abs"] = \
+            abs((self.merged["production"] - self.merged["prediction"]) /
+                self.merged["production"])
+        self.merged["dif_div_capa_abs"] = \
+            abs((self.merged["production"] - self.merged["prediction"]) /
+                self.merged["capacity"])
+
+        self.merged = self.merged.groupby("lead_hr").mean()
+
+        self.merged["rmse"] = np.sqrt(self.merged["dif_sqr"])
+        self.merged["nrmse"] = np.sqrt(self.merged["dif_div_capa_sqr"]) * 100
+        self.merged["mae"] = self.merged["dif_abs"]
+        self.merged["nmae"] = self.merged["dif_abs"] / self.merged[
+            "production"]
+        self.merged["mbe"] = self.merged["dif"]
+        self.merged["nmbe"] = self.merged["dif"] / self.merged["production"]
+        self.merged["mape"] = self.merged["dif_div_real_abs"]
+        self.merged["nmape"] = self.merged["dif_div_capa_abs"]
+
+        self.merged["r-squared"] = 1 - (self.merged["dif_sqr"] / self.merged[
+            "real_variance"])
+
+        self.merged.to_excel(CONSTANT.data_file_path +
+                             "rsqrdtest20200203.xlsx")
+
+
+if __name__ == '__main__':
+    evaler = SimpleEval()
+    evaler.set_through_file("evalexp20200131.xlsx")
+
+    evaler.eval()

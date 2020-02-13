@@ -11,11 +11,13 @@ import time
 
 
 class TrainingDataMaker:
-    def __init__(self, file_type, fold_type, time_interval, variables):
+    def __init__(self, file_type, fold_type, time_interval,
+                 location_coordinate_list, variables):
         self.file_type = file_type
         self.fold_type = fold_type
         self.time_interval = time_interval
         self.variables = variables
+        self.location_list = location_coordinate_list
 
         self.ftp_accessor = FtpAccessor(CONSTANT.ftp_ip, CONSTANT.ftp_id,
                                         CONSTANT.ftp_pw)
@@ -25,12 +27,12 @@ class TrainingDataMaker:
         self.analyzer = NwpGridAnalyzer()
         self.visualizer = Visualizer()
         self.input_converter = InputConverter()
+        self.container = FilesContainer(file_type, fold_type,
+                                        self.location_list, variables)
+        self.master = DataOrganizer(self.analyzer, self.container)
 
-        self.container = None
         self.queue_job_checker = None
         self.real_maker = None
-
-        self.master = None
 
     def create_nwp_checkpoint(self, save_df_name, remove=True):
         df = None
@@ -69,8 +71,8 @@ class TrainingDataMaker:
 
             # 3-6 extract data for each time interval
             temp_df = self.master.data_collect(CONSTANT.num_of_process)
-            temp_df.to_excel(CONSTANT.data_file_path + "temp_file_" + str(i)
-                             + ".xlsx")
+            temp_df.to_excel(CONSTANT.data_file_path + save_df_name +
+                             "temp_file_" + str(i) + ".xlsx")
             if i == 0:
                 df = temp_df
             else:
@@ -172,30 +174,19 @@ class TrainingDataMaker:
 class VppTraining(TrainingDataMaker):
     def __init__(self, file_type, fold_type, time_interval, plant_id_list,
                  variables):
-        super(VppTraining, self).__init__(file_type, fold_type, time_interval,
+        super(VppTraining, self).__init__(file_type, fold_type,
+                                          time_interval, InputConverter().vpp_compx_id_to_coordinates(plant_id_list, get_site_info_df()),
                                           variables)
-        self.plant_id_list = plant_id_list
-        self.plant_location_list = \
-            InputConverter().vpp_compx_id_to_coordinates(plant_id_list,
-                                                         get_site_info_df())
-
-        self.container = FilesContainer(file_type, fold_type,
-                                        self.plant_location_list, variables)
-
-        self.master = DataOrganizer(self.analyzer, self.container)
-        self.real_maker = VppRealMaker(self.time_interval, self.plant_id_list)
+        self.real_maker = VppRealMaker(self.time_interval, plant_id_list)
 
 
 class JenonTraining(TrainingDataMaker):
     def __init__(self, file_type, fold_type, time_interval, variables):
         super(JenonTraining, self).__init__(file_type, fold_type,
-                                            time_interval, variables)
-        self.location_list = [CONSTANT.jeju_coodrinate,
-                              CONSTANT.nonsan_coordinate]
-
-        self.container = FilesContainer(file_type, fold_type,
-                                        self.location_list, variables)
-        self.master = DataOrganizer(self.analyzer, self.container)
+                                            time_interval,
+                                            [CONSTANT.jeju_coodrinate,
+                                             CONSTANT.nonsan_coordinate],
+                                            variables)
         self.real_maker = JenonRealMaker(self.time_interval)
 
 
