@@ -1,5 +1,7 @@
 import CONSTANT
 import datetime
+import pandas as pd
+import os
 
 
 class InputConverter:
@@ -69,14 +71,81 @@ class InputConverter:
     def convert_to_variable_list(variable, file_type):
         if variable == "all":
             path = CONSTANT.setting_file_path + file_type.info_file_name
-            var_list = list(pd.read_excel(path)["var_abbrev"])
-            print(var_list)
+            variable = list(pd.read_excel(path)["var_abbrev"])
         else:
             variable = variable
         return variable
 
+    @staticmethod
+    def save_filename_for_signiture_location(time_interval, coordinates):
+        today = datetime.datetime.today()
+        today_str = str(today.year) + str(today.month) + str(today.day)
+        if len(coordinates) == 2:
+            signiture = "nj"
+        elif len(coordinates) == 4:
+            signiture = "sgv"
+        return "{}y{}m{}w_{}_{}".format(str(time_interval[0])[0:4],
+                                        str(time_interval[0])[4:6].zfill(2),
+                                        (int(str(time_interval[0])[6:8]) //
+                                         7) + 1,
+                                        signiture,
+                                        today_str)
+
+    @staticmethod
+    def time_interval_from_m_w(year, month, week_th):
+        max_day = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+        if year % 400 == 0:
+            max_day[1] = 29
+        elif year % 100 == 0:
+            max_day[1] = 28
+        elif year % 4 == 0:
+            max_day[1] = 29
+        else:
+            max_day[1] = 28
+
+        if month == 2 and week_th == 5:
+            print("this year, February has only 28 days")
+            return
+        elif week_th > 5:
+            print("No month has more than 5 weeks")
+            return
+
+        start_day = int("{}{}{}00".format(year, str(month).zfill(2),
+                                      str((week_th - 1) * 7 + 1).zfill(2)))
+        if week_th == 5:
+            end_day = int("{}{}{}23".format(year, str(month).zfill(2),
+                                    str(max_day[month - 1])))
+        else:
+            end_day = int("{}{}{}23".format(year, str(month).zfill(2),
+                                    str((week_th - 1) * 7 + 1 + 6).zfill(2)))
+
+        time_interval = [start_day, end_day]
+        return time_interval
+
+    def merge_files_by_horizontally(self):
+
+        pass
+
+
+
+
 
 if __name__ == '__main__':
-    test = InputConverter()
-    from nwp_object.NwpFile import *
-    test.convert_to_variable_list("all", RdapsFile)
+    converter = InputConverter()
+    a = converter.save_filename_for_signiture_location([2019100800,
+                                                        2019101423],
+                                                       [(33.2875,
+                                                         126.648611),
+                                                        (36.149019,
+                                                         127.176031)])
+    print(a)
+
+    class A:
+        _a = 1
+        a = 2
+
+    b = A()
+    print(b.a)
+    print(b._a)
+

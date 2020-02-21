@@ -74,8 +74,8 @@ class VppEval(GeneralEval):
 class JenonEval(GeneralEval):
     def __init__(self, time_interval):
         super(JenonEval, self).__init__(time_interval)
-        self.loc_jeju = CONSTANT.jeju_coodrinate
-        self.loc_nonsan = CONSTANT.nonsan_coordinate
+        self.loc_jeju = CONSTANT.jenon_coordinates[0]
+        self.loc_nonsan = CONSTANT.jenon_coordinates[1]
 
         self.setting = ["unis", [self.loc_jeju, self.loc_nonsan],
                         "nonje_1016model.h5", "rdaps.h5"]

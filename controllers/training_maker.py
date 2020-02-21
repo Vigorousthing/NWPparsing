@@ -39,12 +39,9 @@ class TrainingDataMaker:
         # 1. type conversion : int(ex: 2019101100) to datetime object
         converted_interval = self.input_converter.time_interval_conversion(
             self.time_interval)
-        # converted_interval = self.input_converter.date_buffer_for_real_data(
-        #     converted_interval)
 
         # 2. split time interval for
         time_interval_list = self.split_time(converted_interval)
-        print(time_interval_list)
 
         # 3. loop split time interval
         for i, time_interval in enumerate(time_interval_list):
@@ -184,8 +181,8 @@ class JenonTraining(TrainingDataMaker):
     def __init__(self, file_type, fold_type, time_interval, variables):
         super(JenonTraining, self).__init__(file_type, fold_type,
                                             time_interval,
-                                            [CONSTANT.jeju_coodrinate,
-                                             CONSTANT.nonsan_coordinate],
+                                            [CONSTANT.jenon_coordinates[0],
+                                             CONSTANT.jenon_coordinates[1]],
                                             variables)
         self.real_maker = JenonRealMaker(self.time_interval)
 

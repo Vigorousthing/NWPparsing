@@ -47,8 +47,13 @@ db_pw = "xodidrhkd2020"
 
 db_name = "rtu"
 
-jeju_coodrinate = (33.2875, 126.648611)
-nonsan_coordinate = (36.149019, 127.176031)
+# goduk / dobong / jichuk / gaehwa
+garage_coordinates = [(37.566601, 127.168451), (37.701720, 127.052289),
+                      (37.651369, 126.906272), (37.578967, 126.793614)]
+
+# jeju / nonsan
+jenon_coordinates = [(33.2875, 126.648611), (36.149019, 127.176031)]
+
 
 # mongo db info
 mongodb_ip = "10.0.1.40"

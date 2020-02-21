@@ -1,30 +1,64 @@
 from controllers.training_maker import *
 from util.input_converter import *
-
 from nwp_object.NwpFile import *
 
-time_interval = [2019100100, 2019103123]
+
 # vpp_site_id = ["P31S51040", "P61S31210", "P61S31453", "P61S31550",
 #                "P64S52120"]
 variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
 
-# goduk / dobong / jichuk / gaehwa
-garage_coordinates = [(37.566601, 127.168451), (37.701720, 127.052289),
-                      (37.651369, 126.906272), (37.578967, 126.793614)]
+# coordinates = CONSTANT.jenon_coordinates
+# coordinates = CONSTANT.garage_coordinates
+
+# time_interval = InputConverter.time_interval_from_m_w(year, month, week_th)
+# save_filename = InputConverter().save_filename_for_signiture_location(
+#     time_interval, coordinates)
+
+
+def iterate_inside_month(y, m):
+    coordinates_list = [CONSTANT.jenon_coordinates,
+                        CONSTANT.garage_coordinates]
+    for w in range(1, 6):
+        time_interval = InputConverter.time_interval_from_m_w(y, m, w)
+        for coordinates in coordinates_list:
+            save_filename = InputConverter().\
+                save_filename_for_signiture_location(
+                time_interval, coordinates)
+
+            nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
+                                            coordinates, variables)
+            nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
+        nwp_extract.ftp_accessor.remove_from_local_pc(
+            nwp_extract.container.filename_list)
+
+
+def extarct_from_m_w(y, m, w_th):
+    coordinates_list = [CONSTANT.jenon_coordinates,
+                        CONSTANT.garage_coordinates]
+    time_interval = InputConverter.time_interval_from_m_w(y, m, w_th)
+
+    for coordinates in coordinates_list:
+        save_filename = InputConverter().save_filename_for_signiture_location(
+            time_interval, coordinates)
+        nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
+                                        coordinates, variables)
+        nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
+
 
 if __name__ == '__main__':
-    nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
-                                    garage_coordinates, variables)
-    # maker1 = VppTraining(LdapsFile, "unis", time_interval, vpp_site_id,
-    #                      variables)
-    start = datetime.datetime.now()
-    # maker1.create_nwp_checkpoint("speedtest_from_jhpark", remove=False)
-    # maker1.create_training_data_ldaps("thridparty_test_nwp1125")
-    nwp_extract.create_nwp_checkpoint("2019y10m_sgv_20200213",
-                                      remove=False)
-    end = datetime.datetime.now()
-    print(end-start, ": lapsed")
+    year = 2019
+    month = 11
 
+    # iterate_inside_month(year, month)
+    extarct_from_m_w(year, month, 5)
+
+    # nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
+    #                                 coordinates, variables)
+    # start = datetime.datetime.now()
+    # nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
+    # end = datetime.datetime.now()
+    # print(end-start, ": lapsed")
+    pass
 
 
 # file_type = LdapsFile
