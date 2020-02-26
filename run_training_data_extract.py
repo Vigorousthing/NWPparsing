@@ -47,17 +47,19 @@ def extarct_from_m_w(y, m, w_th):
 
 if __name__ == '__main__':
     year = 2019
-    month = 11
+    month = 6
 
     # iterate_inside_month(year, month)
-    extarct_from_m_w(year, month, 5)
+    # extarct_from_m_w(year, month, 5)
+    time_interval = [2019100100, 2019100200]
+    coordinates = []
 
-    # nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
-    #                                 coordinates, variables)
-    # start = datetime.datetime.now()
-    # nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
-    # end = datetime.datetime.now()
-    # print(end-start, ": lapsed")
+    nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
+                                    coordinates, variables)
+    start = datetime.datetime.now()
+    nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
+    end = datetime.datetime.now()
+    print(end-start, ": lapsed")
     pass
 
 
