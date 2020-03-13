@@ -81,6 +81,9 @@ class TrainingDataMaker:
                     self.container.filename_list)
             print("passed in {}th iteration : ".format(i), end - start)
             self.queue_job_checker.terminate()
+
+            #join!!!!!
+
         df.to_excel(CONSTANT.data_file_path + "{}.xlsx".
                     format(save_df_name))
 

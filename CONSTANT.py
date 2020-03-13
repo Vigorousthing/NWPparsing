@@ -48,6 +48,7 @@ db_pw = "xodidrhkd2020"
 db_name = "rtu"
 
 # goduk / dobong / jichuk / gaehwa
+# capacity : 612 / 648 / 1992 / 990
 garage_coordinates = [(37.566601, 127.168451), (37.701720, 127.052289),
                       (37.651369, 126.906272), (37.578967, 126.793614)]
 

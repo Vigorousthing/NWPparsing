@@ -23,13 +23,39 @@ import pandas as pd
 
 
 training_input_file = pd.read_excel(
-    CONSTANT.data_file_path + "20200128ldapssvrtestinputoutput.xlsx")
+    CONSTANT.data_file_path + "svg_trrd_6to12.xlsx")
 # training_input_file = np.array(training_input_file)
+training_input_file = training_input_file[training_input_file.location_num
+                                          == 0]
+# print(training_input_file.CRTN_TM)
 
-free = np.array(training_input_file[["NDNSW", "HFSFC", "TMP", "RH",
-                                     "TMP-SFC"]])
-dpnt = np.array(training_input_file["real"])
+# training_input_file = training_input_file[(training_input_file.CRTN_TM.dt.hour
+#                                           == 15) |
+#                                           (training_input_file.CRTN_TM.dt.hour
+#                                           == 9)]
 
-l_modelob = LdapsModelObject(free, dpnt)
-l_modelob.split_training_data_for_eval(0.1)
-l_modelob.create_svr_model("20200128svr.pkl")
+print(training_input_file)
+
+model_input_var = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
+# model_input_var = ["NDNSW", "UGRD", "VGRD", "TMP", "SPFH", "RH", "DPT"]
+
+
+
+model_name = "nonje_1016model.h5"
+# model_name = "20200310svr.pkl"
+# model_name = "20200310ann.h5"
+# model_name = "20200311xgb"
+
+l_modelob = LdapsModelObject(training_input_file, model_input_var)
+l_modelob.split_training_data_for_eval(0.8)
+# l_modelob.create_svr_model("20200302svr0th.pkl")
+# l_modelob.create_ann_model("20200306ann0th0.h5", 5)
+# l_modelob.create_svr_model("20200306svr0th0.pkl")
+
+# l_modelob.create_ann_model("20200310ann.h5", 25)
+# l_modelob.create_svr_model("20200310svr.pkl")
+# l_modelob.create_xgb_model(model_name)
+
+l_modelob.set_exist_model(model_name)
+df = l_modelob.eval_model()
+df.to_excel(CONSTANT.data_file_path + "20200312" + model_name + "result.xlsx")

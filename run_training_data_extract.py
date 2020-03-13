@@ -5,19 +5,23 @@ from nwp_object.NwpFile import *
 
 # vpp_site_id = ["P31S51040", "P61S31210", "P61S31453", "P61S31550",
 #                "P64S52120"]
-variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC"]
+variables = ["NDNSW", "HFSFC", "TMP", "RH", "TMP-SFC", "UGRD", "VGRD",
+             "SPFH", "RH", "DPT"]
+time_interval = [2019100100, 2019100700]
 
-# coordinates = CONSTANT.jenon_coordinates
-# coordinates = CONSTANT.garage_coordinates
+coordinates = CONSTANT.jenon_coordinates
+coordinates = CONSTANT.garage_coordinates
 
 # time_interval = InputConverter.time_interval_from_m_w(year, month, week_th)
-# save_filename = InputConverter().save_filename_for_signiture_location(
-#     time_interval, coordinates)
+save_filename = InputConverter().save_filename_for_signiture_location(
+    time_interval, coordinates)
 
 
 def iterate_inside_month(y, m):
+    # coordinates_list = CONSTANT.jenon_coordinates + CONSTANT.garage_coordinates
     coordinates_list = [CONSTANT.jenon_coordinates,
                         CONSTANT.garage_coordinates]
+    print(coordinates_list)
     for w in range(1, 6):
         time_interval = InputConverter.time_interval_from_m_w(y, m, w)
         for coordinates in coordinates_list:
@@ -47,21 +51,17 @@ def extarct_from_m_w(y, m, w_th):
 
 if __name__ == '__main__':
     year = 2019
-    month = 6
+    month = 4
 
-    # iterate_inside_month(year, month)
     # extarct_from_m_w(year, month, 5)
-    time_interval = [2019100100, 2019100200]
-    coordinates = []
 
-    nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
-                                    coordinates, variables)
+    # nwp_extract = TrainingDataMaker(LdapsFile, "unis", time_interval,
+    #                                 coordinates, variables)
     start = datetime.datetime.now()
-    nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
+    iterate_inside_month(year, month)
+    # nwp_extract.create_nwp_checkpoint(save_filename, remove=False)
     end = datetime.datetime.now()
     print(end-start, ": lapsed")
-    pass
-
 
 # file_type = LdapsFile
 # fold_type = "unis"

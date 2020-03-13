@@ -144,8 +144,51 @@ class SimpleEval:
         self.merged["r-squared"] = 1 - (self.merged["dif_sqr"] / self.merged[
             "real_variance"])
 
-        self.merged.to_excel(CONSTANT.data_file_path +
-                             "rsqrdtest20200203.xlsx")
+        # self.merged.to_excel(CONSTANT.data_file_path +
+        #                      "rsqrdtest20200203.xlsx")
+        print(self.merged)
+
+    def _eval(self, merged_df):
+        # merged_df = merged_df[merged_df.real > (0.1 * merged_df.capacity)]
+        merged_df["prediction"] = (merged_df["prediction"] / 612) * \
+                                  merged_df["capacity"]
+
+        merged_df["dif"] = merged_df["real"] - \
+                             merged_df["prediction"]
+        merged_df["dif_abs"] = abs(merged_df["dif"])
+        merged_df["dif_sqr"] = merged_df["dif"] ** 2
+
+        merged_df["real_variance"] = np.square(
+            merged_df["real"] - np.mean(merged_df["real"]))
+
+        merged_df["dif_div_capa_sqr"] = \
+            ((merged_df["real"] - merged_df["prediction"]) /
+             merged_df["capacity"]) ** 2
+        merged_df["dif_div_real_abs"] = \
+            abs((merged_df["real"] - merged_df["prediction"]) /
+                merged_df["real"])
+        merged_df["dif_div_capa_abs"] = \
+            abs((merged_df["real"] - merged_df["prediction"]) /
+                merged_df["capacity"])
+
+        merged_df = merged_df.groupby("horizon").mean()
+
+        merged_df["rmse"] = np.sqrt(merged_df["dif_sqr"])
+        merged_df["nrmse"] = np.sqrt(merged_df["dif_div_capa_sqr"]) * 100
+        merged_df["mae"] = merged_df["dif_abs"]
+        merged_df["nmae"] = merged_df["dif_abs"] / merged_df["real"]
+        merged_df["mbe"] = merged_df["dif"]
+        merged_df["nmbe"] = merged_df["dif"] / merged_df["real"]
+        merged_df["mape"] = merged_df["dif_div_real_abs"]
+        merged_df["nmape"] = merged_df["dif_div_capa_abs"]
+
+        merged_df["r-squared"] = 1 - (merged_df["dif_sqr"] / merged_df[
+            "real_variance"])
+
+        print(merged_df)
+        print(merged_df.describe())
+
+        return merged_df
 
 
 if __name__ == '__main__':

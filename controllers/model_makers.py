@@ -1,20 +1,34 @@
 import keras
 import CONSTANT
-from sklearn.svm import SVC
+from sklearn.svm import SVC, SVR
 import pickle
+import numpy as np
+from controllers import eval_maker
+from xgboost import *
+from keras.layers import BatchNormalization, Dropout
 
 
 class ModelObject:
-    def __init__(self, free_var_data=None, dpnt_var_data=None):
-        self.original_input_free = free_var_data
-        self.original_input_dpnt = dpnt_var_data
+    def __init__(self, original_df, model_input_var):
+        self.original_df = original_df
+        # self.original_df["original_real"] = self.original_df["real"]
+        # self.original_df["real"] = self.original_df["real"] / (
+        #         self.original_df["capacity"] / 99)
 
-        self.training_input_free = free_var_data
-        self.training_input_dpnt = dpnt_var_data
+        self.eval_df_after_split = None
+        self.model_input_var = model_input_var
+        self.capacity = original_df["capacity"]
+
+        self.original_input_free = np.array(self.original_df[
+                                                self.model_input_var])
+        self.original_input_dpnt = np.array(self.original_df["real"])
+
+        self.training_input_free = np.array(self.original_df[
+                                                self.model_input_var])
+        self.training_input_dpnt = np.array(self.original_df["real"])
+
         self.eval_input_free = None
         self.eval_input_dpnt = None
-
-        self.split_training_data_for_eval()
 
         self.output_num = None
 
@@ -32,16 +46,28 @@ class ModelObject:
         self.eval_model()
 
     def create_svr_model(self, model_name):
-        self.model = SVC(kernel="linear")
+        self.model = SVR(kernel="linear")
         self.model.fit(self.training_input_free, self.training_input_dpnt)
-
-        with open(CONSTANT.model_path + model_name, "wb") as f:
-            pickle.dump(self.model, f)
-        # self.model.save(CONSTANT.model_path + model_name)
+        pickle.dump(self.model, open(CONSTANT.model_path + model_name, "wb"))
         self.eval_model()
 
+    def create_xgb_model(self, model_name=None):
+        # self.model = XGBRegressor()
+        self.model = XGBRFRegressor(booster="gbtree",
+                                    max_depth=10,
+                                    )
+        # self.model = XGBRFRegressor()
+
+        self.model.fit(self.training_input_free, self.training_input_dpnt)
+        self.eval_model()
+        pass
+
     def set_exist_model(self, model_name):
-        self.model = keras.models.load_model(CONSTANT.model_path + model_name)
+        if model_name[-2:] == "h5":
+            self.model = keras.models.load_model(CONSTANT.model_path + model_name)
+        else:
+            self.model = pickle.load(
+                open(CONSTANT.model_path + model_name, "rb"))
 
     def set_training_data(self, free_var_data, dpnt_var_data):
         self.training_input_free = free_var_data
@@ -52,14 +78,18 @@ class ModelObject:
         self.eval_input_dpnt = dpnt_var_data
 
     def split_training_data_for_eval(self, training_rate=0.8):
-        if self.original_input_free is None or self.original_input_dpnt is \
-                None:
-            return
+        # if self.original_input_free is None or self.original_input_dpnt is \
+        #         None:
+        #     return
+
         df_len = self.original_input_free.shape[0]
         idx = int(df_len*training_rate)
 
+        self.eval_df_after_split = self.original_df[idx:]
+
         self.eval_input_free = self.original_input_free[idx:, :]
         self.eval_input_dpnt = self.original_input_dpnt[idx:]
+        self.capacity = self.capacity[idx:]
 
         self.training_input_free = self.original_input_free[:idx, :]
         self.training_input_dpnt = self.original_input_dpnt[:idx]
@@ -87,27 +117,39 @@ class ModelObject:
                        epochs=epoch)
 
 
-class LdapsModelObject(ModelObject):
-    def __init__(self, free_var_data=None, dpnt_var_data=None):
-        super(LdapsModelObject, self).__init__(free_var_data, dpnt_var_data)
+class LdapsModelObject(ModelObject, eval_maker.SimpleEval):
+    def __init__(self, original_df, model_input_var):
+        super(LdapsModelObject, self).__init__(original_df, model_input_var)
         self.output_num = 1
-        pass
 
     def eval_model(self):
         num = 0
-        print(self.make_prediction(self.eval_input_free))
+        # print(self.make_prediction(self.eval_input_free))
         # for i, val in enumerate(self.make_prediction(self.eval_input_free)):
         #     num += abs(val[0] - self.eval_input_dpnt[i])/99
-        for i, val in enumerate(self.make_prediction(self.eval_input_free)):
-            num += abs(val - self.eval_input_dpnt[i])/99
-        nmape = num/len(self.make_prediction(self.eval_input_free))
-        print(nmape)
-        return nmape
+
+        prediction = self.make_prediction(self.eval_input_free).ravel()
+        self.eval_df_after_split["prediction"] = prediction
+
+        return super(LdapsModelObject, self)._eval(self.eval_df_after_split)
+
+
+        # prediction = np.multiply(prediction, self.capacity/99)
+
+        # for i, val in enumerate(prediction):
+        #     num += abs(val - self.eval_input_dpnt[i] * (
+        #         self.capacity[i]/99)) / self.capacity[i]
+        # for i, val in enumerate(prediction):
+        #     num += abs(val - self.eval_input_dpnt[i]) / 612
+        #
+        # nmape = num/len(prediction)
+        # print(nmape)
+        # return nmape
 
 
 class RdapsModelObject(ModelObject):
-    def __init__(self, free_var_data=None, dpnt_var_data=None):
-        super(RdapsModelObject, self).__init__(free_var_data, dpnt_var_data)
+    def __init__(self, original_df, model_input_var):
+        super(RdapsModelObject, self).__init__(original_df, model_input_var)
         self.output_num = 3
 
     def eval_model(self):
